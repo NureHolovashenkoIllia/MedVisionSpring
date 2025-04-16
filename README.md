@@ -41,7 +41,7 @@ MedVision є дослідницьким проєктом і не є медичн
 
 ---
 
-### ⚙️ Technologies
+### Technologies
 
 - **Java 17+**
 - **Spring Boot**
