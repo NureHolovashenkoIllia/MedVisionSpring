@@ -25,7 +25,8 @@ public class ImageAnalysis {
     @Column(name = "analysis_recall")
     private Float analysisRecall;
 
-    @Column(name = "analysis_diagnosis")
+    @Lob
+    @Column(name = "analysis_diagnosis", columnDefinition = "TEXT")
     private String analysisDiagnosis;
 
     @Column(name = "creation_datetime")

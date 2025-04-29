@@ -19,7 +19,8 @@ public class AnalysisNote {
     @Column(name = "analysis_note_id", nullable = false)
     private Long analysisNoteId;
 
-    @Column(name = "note_text", nullable = false)
+    @Lob
+    @Column(name = "note_text", nullable = false, columnDefinition = "text")
     private String noteText;
 
     @Column(name = "note_area_x")
