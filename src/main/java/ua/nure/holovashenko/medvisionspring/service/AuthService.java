@@ -78,6 +78,24 @@ public class AuthService {
         return new AuthResponse(jwt);
     }
 
+    public AuthResponse registerAdmin(AdminRegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ApiException("Користувач з таким email вже існує", HttpStatus.CONFLICT);
+        }
+
+        User user = new User();
+        user.setUserName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPw(passwordEncoder.encode(request.getPassword()));
+        user.setUserRole(UserRole.ADMIN);
+
+        User savedUser = userRepository.save(user);
+
+        String jwt = jwtService.generateToken(savedUser);
+        return new AuthResponse(jwt);
+    }
+
+
     public AuthResponse login(LoginRequest request) {
         try {
             authenticationManager.authenticate(
@@ -122,6 +140,14 @@ public class AuthService {
                         .role(user.getUserRole())
                         .birthDate(patient.getBirthDate())
                         .gender(patient.getGender().name())
+                        .build();
+            }
+            case ADMIN -> {
+                yield AdminProfileResponse.builder()
+                        .id(user.getUserId())
+                        .name(user.getUserName())
+                        .email(user.getEmail())
+                        .role(user.getUserRole())
                         .build();
             }
             default -> throw new ApiException("Невідома роль", HttpStatus.BAD_REQUEST);

@@ -43,13 +43,14 @@ public class WebSecurityConfig {
                                 "/swagger-ui.html",
                                 "/api/auth/register/doctor",
                                 "/api/auth/register/patient",
+                                "/api/auth/register/admin",
                                 "/api/auth/login"
                                 ).permitAll()
 
                         // Role-based access
                         .requestMatchers("/api/doctor/**").hasRole("DOCTOR")
                         .requestMatchers("/api/patient/**").hasRole("PATIENT")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/analysis/**").hasAnyRole("DOCTOR", "ADMIN")
 
                         // All other requests require authentication

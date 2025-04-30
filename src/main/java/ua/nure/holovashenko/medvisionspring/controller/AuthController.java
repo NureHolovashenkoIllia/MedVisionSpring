@@ -40,6 +40,16 @@ public class AuthController {
         return ResponseEntity.ok(authService.registerPatient(request));
     }
 
+    @Operation(summary = "Реєстрація адміністратора системи")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успішна реєстрація"),
+            @ApiResponse(responseCode = "409", description = "Користувач з таким email вже існує")
+    })
+    @PostMapping("/register/admin")
+    public ResponseEntity<AuthResponse> registerAdmin(@Valid @RequestBody AdminRegisterRequest request) {
+        return ResponseEntity.ok(authService.registerAdmin(request));
+    }
+
     @Operation(summary = "Авторизація користувача")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Успішна авторизація"),
