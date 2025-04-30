@@ -1,0 +1,130 @@
+package ua.nure.holovashenko.medvisionspring.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import ua.nure.holovashenko.medvisionspring.dto.*;
+import ua.nure.holovashenko.medvisionspring.entity.Doctor;
+import ua.nure.holovashenko.medvisionspring.entity.Patient;
+import ua.nure.holovashenko.medvisionspring.entity.User;
+import ua.nure.holovashenko.medvisionspring.enums.Gender;
+import ua.nure.holovashenko.medvisionspring.enums.UserRole;
+import ua.nure.holovashenko.medvisionspring.exception.ApiException;
+import ua.nure.holovashenko.medvisionspring.repository.DoctorRepository;
+import ua.nure.holovashenko.medvisionspring.repository.PatientRepository;
+import ua.nure.holovashenko.medvisionspring.repository.UserRepository;
+import ua.nure.holovashenko.medvisionspring.security.JwtService;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final DoctorRepository doctorRepository;
+    private final PatientRepository patientRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+
+    public AuthResponse registerDoctor(DoctorRegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ApiException("Користувач з таким email вже існує", HttpStatus.CONFLICT);
+        }
+
+        User user = new User();
+        user.setUserName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPw(passwordEncoder.encode(request.getPassword()));
+        user.setUserRole(UserRole.DOCTOR);
+
+        User savedUser = userRepository.save(user);
+
+        Doctor doctor = new Doctor();
+        doctor.setUser(savedUser);
+        doctor.setPosition(request.getPosition());
+        doctor.setDepartment(request.getDepartment());
+        doctor.setLicenseNumber(request.getLicenseNumber());
+        doctorRepository.save(doctor);
+
+        String jwt = jwtService.generateToken(savedUser);
+        return new AuthResponse(jwt);
+    }
+
+    public AuthResponse registerPatient(PatientRegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ApiException("Користувач з таким email вже існує", HttpStatus.CONFLICT);
+        }
+
+        User user = new User();
+        user.setUserName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPw(passwordEncoder.encode(request.getPassword()));
+        user.setUserRole(UserRole.PATIENT);
+
+        User savedUser = userRepository.save(user);
+
+        Patient patient = new Patient();
+        patient.setUser(savedUser);
+        patient.setBirthDate(request.getBirthDate());
+        patient.setGender(Enum.valueOf(Gender.class, request.getGender().toUpperCase()));
+        patientRepository.save(patient);
+
+        String jwt = jwtService.generateToken(savedUser);
+        return new AuthResponse(jwt);
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            throw new ApiException("Невірна електронна пошта або пароль", HttpStatus.UNAUTHORIZED);
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ApiException("Користувач не знайдений", HttpStatus.NOT_FOUND));
+
+        String jwt = jwtService.generateToken(user);
+        return new AuthResponse(jwt);
+    }
+
+    public UserProfileResponse getProfile(UserDetails userDetails) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new ApiException("Користувача не знайдено", HttpStatus.NOT_FOUND));
+
+        return switch (user.getUserRole()) {
+            case DOCTOR -> {
+                Doctor doctor = doctorRepository.findByUser(user)
+                        .orElseThrow(() -> new ApiException("Дані лікаря не знайдені", HttpStatus.NOT_FOUND));
+                yield DoctorProfileResponse.builder()
+                        .id(user.getUserId())
+                        .name(user.getUserName())
+                        .email(user.getEmail())
+                        .role(user.getUserRole())
+                        .position(doctor.getPosition())
+                        .department(doctor.getDepartment())
+                        .licenseNumber(doctor.getLicenseNumber())
+                        .build();
+            }
+            case PATIENT -> {
+                Patient patient = patientRepository.findByUser(user)
+                        .orElseThrow(() -> new ApiException("Дані пацієнта не знайдені", HttpStatus.NOT_FOUND));
+                yield PatientProfileResponse.builder()
+                        .id(user.getUserId())
+                        .name(user.getUserName())
+                        .email(user.getEmail())
+                        .role(user.getUserRole())
+                        .birthDate(patient.getBirthDate())
+                        .gender(patient.getGender().name())
+                        .build();
+            }
+            default -> throw new ApiException("Невідома роль", HttpStatus.BAD_REQUEST);
+        };
+    }
+}

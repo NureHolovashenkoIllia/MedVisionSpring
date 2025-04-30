@@ -34,5 +34,6 @@ public class User {
     @Column(nullable = false)
     private UserRole userRole;
 
-    private LocalDateTime creationDatetime;
+    @Column(name = "creation_datetime", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime creationDatetime = LocalDateTime.now();
 }

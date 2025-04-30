@@ -1,7 +1,5 @@
 server:
   port: 8080
-  servlet:
-    context-path: /api
 
 spring:
   datasource:
@@ -12,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update  # або validate / create / none залежно від стадії
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:

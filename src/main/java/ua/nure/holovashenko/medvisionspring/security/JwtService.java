@@ -5,11 +5,11 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import ua.nure.holovashenko.medvisionspring.entity.User;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -43,6 +43,18 @@ public class JwtService {
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         return claimsResolver.apply(extractAllClaims(token));
     }
+
+    public String generateToken(User user) {
+        return generateToken(
+                org.springframework.security.core.userdetails.User
+                        .withUsername(user.getEmail())
+                        .password(user.getPw())
+                        .roles(user.getUserRole().name())
+                        .build(),
+                user.getUserRole().name()
+        );
+    }
+
 
     public String generateToken(UserDetails userDetails, String role) {
         return Jwts.builder()
