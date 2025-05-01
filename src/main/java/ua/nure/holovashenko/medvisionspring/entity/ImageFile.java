@@ -24,6 +24,10 @@ public class ImageFile {
     @Column(name = "image_file_url", length = 255, nullable = false)
     private String imageFileUrl;
 
+    @Size(max = 255)
+    @Column(name = "image_file_name", length = 255, nullable = false)
+    private String imageFileName;
+
     @Size(max = 100)
     @Column(name = "image_file_type", length = 100, nullable = false)
     private String imageFileType;
