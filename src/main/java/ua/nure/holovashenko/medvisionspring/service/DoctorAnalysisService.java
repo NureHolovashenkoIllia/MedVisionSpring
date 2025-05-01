@@ -2,9 +2,12 @@ package ua.nure.holovashenko.medvisionspring.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ua.nure.holovashenko.medvisionspring.dto.AddNoteRequest;
 import ua.nure.holovashenko.medvisionspring.entity.*;
+import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.*;
 import ua.nure.holovashenko.medvisionspring.svm.ModelMetrics;
 import ua.nure.holovashenko.medvisionspring.svm.SvmService;
@@ -13,7 +16,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,8 +26,11 @@ public class DoctorAnalysisService {
 
     private final SvmService svmService;
     private final UserRepository userRepository;
+    private final PatientRepository patientRepository;
+    private final DoctorRepository doctorRepository;
     private final ImageAnalysisRepository imageAnalysisRepository;
     private final ImageFileRepository imageFileRepository;
+    private final AnalysisNoteRepository analysisNoteRepository;
 
     @Transactional
     public ImageAnalysis analyzeAndSave(MultipartFile file, Long patientId, Long doctorId) throws IOException {
@@ -93,5 +101,40 @@ public class DoctorAnalysisService {
             imageAnalysisRepository.save(a);
             return true;
         }).orElse(false);
+    }
+
+    public List<Patient> getAllPatients() {
+        return patientRepository.findAll();
+    }
+
+    public Patient getPatientById(Long id) {
+        return patientRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Користувача не знайдено", HttpStatus.NOT_FOUND));
+    }
+
+    @Transactional
+    public boolean addNote(Long analysesId, Long doctorId, AddNoteRequest inputNote) {
+        try {
+            ImageAnalysis analysis = imageAnalysisRepository.findById(analysesId)
+                    .orElseThrow(() -> new IllegalArgumentException("Image analysis not found"));
+            Doctor doctor = doctorRepository.findById(doctorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Doctor not found"));
+
+            AnalysisNote note = AnalysisNote.builder()
+                    .noteText(inputNote.getNoteText())
+                    .noteAreaX(inputNote.getNoteAreaX())
+                    .noteAreaY(inputNote.getNoteAreaY())
+                    .noteAreaWidth(inputNote.getNoteAreaWidth())
+                    .noteAreaHeight(inputNote.getNoteAreaHeight())
+                    .creationDatetime(LocalDateTime.now())
+                    .doctor(doctor)
+                    .imageAnalysis(analysis)
+                    .build();
+
+            analysisNoteRepository.save(note);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
