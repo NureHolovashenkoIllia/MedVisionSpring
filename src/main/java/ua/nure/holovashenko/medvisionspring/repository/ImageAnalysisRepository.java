@@ -11,4 +11,6 @@ import java.util.Optional;
 @Repository
 public interface ImageAnalysisRepository extends JpaRepository<ImageAnalysis, Long> {
     List<ImageAnalysis> findAllByPatient(User patient);
+
+    List<ImageAnalysis> findAllByDoctor(User doctor);
 }
