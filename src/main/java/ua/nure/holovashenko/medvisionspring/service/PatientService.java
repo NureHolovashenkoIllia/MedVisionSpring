@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.UserDetails;
 import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
-import ua.nure.holovashenko.medvisionspring.entity.Patient;
 import ua.nure.holovashenko.medvisionspring.entity.User;
 import ua.nure.holovashenko.medvisionspring.repository.ImageAnalysisRepository;
 import ua.nure.holovashenko.medvisionspring.repository.PatientRepository;
 import ua.nure.holovashenko.medvisionspring.repository.UserRepository;
-import ua.nure.holovashenko.medvisionspring.util.PdfUtil;
+import ua.nure.holovashenko.medvisionspring.util.pdf.PdfAnalysisReportGenerator;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +50,6 @@ public class PatientService {
         ImageAnalysis analysis = getAnalysisById(id, userDetails)
                 .orElseThrow(() -> new IllegalArgumentException("Аналіз не знайдено або немає доступу"));
 
-        return PdfUtil.generateAnalysisPdf(analysis);
+        return PdfAnalysisReportGenerator.generateAnalysisPdf(analysis);
     }
 }

@@ -1,4 +1,4 @@
-package ua.nure.holovashenko.medvisionspring.util;
+package ua.nure.holovashenko.medvisionspring.util.pdf;
 
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
