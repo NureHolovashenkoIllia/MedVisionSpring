@@ -1,5 +1,6 @@
 package ua.nure.holovashenko.medvisionspring.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -152,5 +153,41 @@ public class AuthService {
             }
             default -> throw new ApiException("Невідома роль", HttpStatus.BAD_REQUEST);
         };
+    }
+
+    @Transactional
+    public UserProfileResponse editDoctorProfile(UserDetails userDetails, DoctorEditRequest request) {
+        User user = getUser(userDetails);
+        Doctor doctor = doctorRepository.findByUser(user)
+                .orElseThrow(() -> new ApiException("Дані лікаря не знайдені", HttpStatus.NOT_FOUND));
+
+        updateUser(user, request.getName());
+        doctor.setPosition(request.getPosition());
+        doctor.setDepartment(request.getDepartment());
+        doctor.setLicenseNumber(request.getLicenseNumber());
+
+        return getProfile(userDetails);
+    }
+
+    @Transactional
+    public UserProfileResponse editPatientProfile(UserDetails userDetails, PatientEditRequest request) {
+        User user = getUser(userDetails);
+        Patient patient = patientRepository.findByUser(user)
+                .orElseThrow(() -> new ApiException("Дані пацієнта не знайдені", HttpStatus.NOT_FOUND));
+
+        updateUser(user, request.getName());
+        patient.setGender(Gender.valueOf(request.getGender().toUpperCase()));
+        patient.setBirthDate(request.getBirthDate());
+
+        return getProfile(userDetails);
+    }
+
+    private User getUser(UserDetails userDetails) {
+        return userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new ApiException("Користувача не знайдено", HttpStatus.NOT_FOUND));
+    }
+
+    private void updateUser(User user, String name) {
+        user.setUserName(name);
     }
 }

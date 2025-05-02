@@ -77,4 +77,17 @@ public class AuthController {
                     body("{\"Помилка при отриманні профілю\":\"" + e.getMessage() + "\"}");
         }
     }
+
+    @PutMapping("/edit/doctor")
+    public ResponseEntity<?> editDoctorProfile(@AuthenticationPrincipal UserDetails userDetails,
+                                               @Valid @RequestBody DoctorEditRequest request) {
+        return ResponseEntity.ok(authService.editDoctorProfile(userDetails, request));
+    }
+
+    @PutMapping("/edit/patient")
+    public ResponseEntity<?> editPatientProfile(@AuthenticationPrincipal UserDetails userDetails,
+                                                @Valid @RequestBody PatientEditRequest request) {
+        return ResponseEntity.ok(authService.editPatientProfile(userDetails, request));
+    }
+
 }
