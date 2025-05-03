@@ -10,9 +10,7 @@ import ua.nure.holovashenko.medvisionspring.repository.PatientRepository;
 import ua.nure.holovashenko.medvisionspring.repository.UserRepository;
 import ua.nure.holovashenko.medvisionspring.util.pdf.PdfAnalysisReportGenerator;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +21,7 @@ public class PatientService {
     private final ImageAnalysisRepository imageAnalysisRepository;
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
+    private final GcsService gcsService;
 
     public List<ImageAnalysis> getAnalyses(UserDetails userDetails) {
         User patient = userRepository.findByEmail(userDetails.getUsername())
@@ -38,10 +37,9 @@ public class PatientService {
     public Optional<byte[]> getHeatmapBytes(Long id, UserDetails userDetails) throws IOException {
         return getAnalysisById(id, userDetails).map(a -> {
             try {
-                File file = new File(a.getHeatmapFile().getImageFileUrl());
-                return Files.readAllBytes(file.toPath());
+                return gcsService.downloadFile(a.getHeatmapFile().getImageFileUrl());
             } catch (IOException e) {
-                throw new RuntimeException("Не вдалося зчитати heatmap", e);
+                throw new RuntimeException("Не вдалося зчитати heatmap з GCS", e);
             }
         });
     }

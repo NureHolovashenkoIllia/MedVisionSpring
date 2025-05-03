@@ -1,7 +1,9 @@
 package ua.nure.holovashenko.medvisionspring.svm;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.opencv.global.opencv_core;
@@ -9,19 +11,26 @@ import org.bytedeco.opencv.global.opencv_ml;
 import org.bytedeco.opencv.opencv_core.*;
 import org.bytedeco.opencv.opencv_ml.SVM;
 import org.springframework.stereotype.Service;
+import ua.nure.holovashenko.medvisionspring.service.GcsService;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.bytedeco.opencv.global.opencv_imgcodecs.imencode;
 import static org.bytedeco.opencv.global.opencv_imgcodecs.imwrite;
+import static org.opencv.core.CvType.CV_32F;
 import static ua.nure.holovashenko.medvisionspring.svm.ImageProcessor.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 @Service
+@RequiredArgsConstructor
 public class SvmService {
+
+    private final GcsService gcsService;
 
     private static final int FULL_IMAGE_FEATURES = 128 * 128;
     private static final int PATCH_FEATURES = 32 * 32;
@@ -29,8 +38,10 @@ public class SvmService {
     private SVM svmFullImage;
     private SVM svmPatch;
 
-    public SvmService() {
+    @PostConstruct
+    public void init() {
         initModels();
+        loadModelsOnStartup();
     }
 
     private void initModels() {
@@ -46,10 +57,26 @@ public class SvmService {
         return model;
     }
 
-    @PostConstruct
     public void loadModelsOnStartup() {
-        loadModel("model/svm-full.xml", false);
-        loadModel("model/svm-patch.xml", true);
+        loadModelFromGcs("svm-models/svm-full.xml", false);
+        loadModelFromGcs("svm-models/svm-patch.xml", true);
+    }
+
+    public void loadModelFromGcs(String gcsPath, boolean isPatchModel) {
+        try {
+            File tempFile = File.createTempFile("svm-model", ".xml");
+            byte[] modelData = gcsService.downloadFile("gs://medvision-458613.appspot.com/" + gcsPath);
+            Files.write(tempFile.toPath(), modelData);
+
+            if (isPatchModel) {
+                svmPatch = SVM.load(tempFile.getAbsolutePath());
+            } else {
+                svmFullImage = SVM.load(tempFile.getAbsolutePath());
+            }
+        } catch (IOException e) {
+            System.err.println("Не вдалося завантажити модель з GCS: " + gcsPath);
+            e.printStackTrace();
+        }
     }
 
     public void loadModel(String path, boolean isPatchModel) {
@@ -122,7 +149,7 @@ public class SvmService {
                 isPatchModel ? "patch" : "full",
                 metrics[0], metrics[1], metrics[2]);
 
-        saveMetrics(isPatchModel ? "model/metrics-patch.json" : "model/metrics.json",
+        saveMetrics(isPatchModel ? "src/main/resources/metrics-patch.json" : "src/main/resources/metrics.json",
                 new ModelMetrics(metrics[0], metrics[1], metrics[2]));
     }
 

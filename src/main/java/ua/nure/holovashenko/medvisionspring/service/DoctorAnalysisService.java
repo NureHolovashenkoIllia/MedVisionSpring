@@ -1,5 +1,7 @@
 package ua.nure.holovashenko.medvisionspring.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,23 +16,24 @@ import ua.nure.holovashenko.medvisionspring.svm.SvmService;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DoctorAnalysisService {
 
     private final SvmService svmService;
+    private final GcsService gcsService;
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final ImageAnalysisRepository imageAnalysisRepository;
     private final ImageFileRepository imageFileRepository;
     private final AnalysisNoteRepository analysisNoteRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
     public ImageAnalysis analyzeAndSave(MultipartFile file, Long patientId, Long doctorId) throws IOException {
@@ -42,11 +45,14 @@ public class DoctorAnalysisService {
 
         int prediction = svmService.classify(tempFile, false);
 
+        String imageObjectName = "images/upload-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
+        String imageUrl = gcsService.uploadFile(tempFile, imageObjectName, file.getContentType());
+
         ImageFile imageFile = ImageFile.builder()
-                .imageFileName("upload-" + file.getOriginalFilename())
+                .imageFileName(imageObjectName)
                 .imageFileType(file.getContentType())
                 .uploadedAt(LocalDateTime.now())
-                .imageFileUrl(tempFile.getAbsolutePath())
+                .imageFileUrl(imageUrl)
                 .uploadedBy(doctor)
                 .build();
         imageFileRepository.save(imageFile);
@@ -55,16 +61,19 @@ public class DoctorAnalysisService {
         File heatmapFile = File.createTempFile("heatmap-", ".png");
         svmService.saveMatToFile(heatmapMat, heatmapFile);
 
+        String heatmapObjectName = "heatmaps/heatmap-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
+        String heatmapUrl = gcsService.uploadFile(heatmapFile, heatmapObjectName, file.getContentType());
+
         ImageFile heatmapImage = ImageFile.builder()
-                .imageFileName("heatmap-" + file.getOriginalFilename())
+                .imageFileName(heatmapObjectName)
                 .imageFileType(file.getContentType())
                 .uploadedAt(LocalDateTime.now())
-                .imageFileUrl(heatmapFile.getAbsolutePath())
+                .imageFileUrl(heatmapUrl)
                 .uploadedBy(doctor)
                 .build();
         imageFileRepository.save(heatmapImage);
 
-        ModelMetrics metrics = svmService.loadMetrics("model/metrics.json");
+        ModelMetrics metrics = loadMetricsFromGcs("svm-metrics/metrics.json");
 
         ImageAnalysis analysis = ImageAnalysis.builder()
                 .imageFile(imageFile)
@@ -77,6 +86,7 @@ public class DoctorAnalysisService {
                 .patient(patient)
                 .doctor(doctor)
                 .build();
+
         return imageAnalysisRepository.save(analysis);
     }
 
@@ -87,10 +97,9 @@ public class DoctorAnalysisService {
     public Optional<byte[]> getHeatmapBytes(Long id) throws IOException {
         return imageAnalysisRepository.findById(id).map(a -> {
             try {
-                File file = new File(a.getHeatmapFile().getImageFileUrl());
-                return Files.readAllBytes(file.toPath());
+                return gcsService.downloadFile(a.getHeatmapFile().getImageFileUrl());
             } catch (IOException e) {
-                throw new RuntimeException("Cannot read heatmap file", e);
+                throw new RuntimeException("Cannot read heatmap from GCS", e);
             }
         });
     }
@@ -135,6 +144,17 @@ public class DoctorAnalysisService {
             return true;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    public ModelMetrics loadMetricsFromGcs(String metricsPath) {
+        try {
+            byte[] data = gcsService.downloadFile("gs://medvision-458613.appspot.com/" + metricsPath);
+            return objectMapper.readValue(data, ModelMetrics.class);
+        } catch (IOException e) {
+            System.err.println("Не вдалося завантажити метрики з GCS: " + metricsPath);
+            e.printStackTrace();
+            return new ModelMetrics(0, 0, 0); // або можна повернути null, якщо хочеш обробляти помилки окремо
         }
     }
 }
