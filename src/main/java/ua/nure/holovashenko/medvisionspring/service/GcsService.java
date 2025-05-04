@@ -1,14 +1,16 @@
 package ua.nure.holovashenko.medvisionspring.service;
 
+import com.google.cloud.storage.Acl;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
 import java.nio.channels.Channels;
 
 @Service
@@ -30,13 +32,35 @@ public class GcsService {
             inputStream.transferTo(outputStream);
         }
 
-        return String.format("gs://%s/%s", BUCKET_NAME, objectName);
+        storage.createAcl(blobId, Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER));
+
+        return String.format("https://storage.googleapis.com/%s/%s", BUCKET_NAME, objectName);
     }
 
-    public byte[] downloadFile(String gcsUrl) throws IOException {
+    public byte[] downloadFileGcs(String gcsUrl) throws IOException {
         String objectName = extractObjectName(gcsUrl);
         BlobId blobId = BlobId.of(BUCKET_NAME, objectName);
         return storage.readAllBytes(blobId);
+    }
+
+    public byte[] downloadFile(String publicUrl) throws IOException {
+        URI uri = URI.create(publicUrl);
+        URL url = uri.toURL();
+
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+
+        try (InputStream inputStream = connection.getInputStream();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+
+            return outputStream.toByteArray();
+        }
     }
 
     private String extractObjectName(String gcsUrl) {

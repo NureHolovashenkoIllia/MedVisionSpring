@@ -149,7 +149,7 @@ public class DoctorAnalysisService {
 
     public ModelMetrics loadMetricsFromGcs(String metricsPath) {
         try {
-            byte[] data = gcsService.downloadFile("gs://medvision-458613.appspot.com/" + metricsPath);
+            byte[] data = gcsService.downloadFileGcs("gs://medvision-458613.appspot.com/" + metricsPath);
             return objectMapper.readValue(data, ModelMetrics.class);
         } catch (IOException e) {
             System.err.println("Не вдалося завантажити метрики з GCS: " + metricsPath);
