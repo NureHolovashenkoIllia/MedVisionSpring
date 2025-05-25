@@ -19,4 +19,10 @@ public class DoctorEditRequest {
 
     @NotBlank(message = "Номер ліцензії не може бути порожнім")
     private String licenseNumber;
+
+    @NotBlank(message = "Освіта не може бути порожньою")
+    private String education;
+
+    @NotBlank(message = "Досягнення не можуть бути порожніми")
+    private String achievements;
 }

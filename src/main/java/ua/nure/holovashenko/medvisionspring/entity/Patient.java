@@ -6,6 +6,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import ua.nure.holovashenko.medvisionspring.enums.Gender;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -25,6 +26,18 @@ public class Patient {
     @Enumerated(EnumType.STRING)
     @Column(name = "gender")
     private Gender gender;
+
+    @Column(name = "height_cm", precision = 5, scale = 2)
+    private BigDecimal heightCm;
+
+    @Column(name = "weight_kg", precision = 5, scale = 2)
+    private BigDecimal weightKg;
+
+    @Column(name = "chronic_diseases", columnDefinition = "TEXT")
+    private String chronicDiseases;
+
+    @Column(name = "allergies", columnDefinition = "TEXT")
+    private String allergies;
 
     @OneToOne
     @MapsId

@@ -29,6 +29,12 @@ public class Doctor {
     @Column(name = "license_number", length = 50)
     private String licenseNumber;
 
+    @Column(name = "education", columnDefinition = "TEXT")
+    private String education;
+
+    @Column(name = "achievements", columnDefinition = "TEXT")
+    private String achievements;
+
     @OneToOne
     @MapsId
     @OnDelete(action = OnDeleteAction.CASCADE)

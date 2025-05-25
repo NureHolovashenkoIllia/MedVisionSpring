@@ -65,7 +65,7 @@ public class SvmService {
     public void loadModelFromGcs(String gcsPath, boolean isPatchModel) {
         try {
             File tempFile = File.createTempFile("svm-model", ".xml");
-            byte[] modelData = gcsService.downloadFileGcs("gs://medvision-458613.appspot.com/" + gcsPath);
+            byte[] modelData = gcsService.downloadFileGcs("gs://medvision458613/" + gcsPath);
             Files.write(tempFile.toPath(), modelData);
 
             if (isPatchModel) {

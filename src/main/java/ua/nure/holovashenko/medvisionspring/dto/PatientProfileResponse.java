@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import ua.nure.holovashenko.medvisionspring.enums.UserRole;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -16,4 +17,8 @@ public class PatientProfileResponse implements UserProfileResponse {
 
     private LocalDate birthDate;
     private String gender;
+    private BigDecimal heightCm;
+    private BigDecimal weightKg;
+    private String chronicDiseases;
+    private String allergies;
 }

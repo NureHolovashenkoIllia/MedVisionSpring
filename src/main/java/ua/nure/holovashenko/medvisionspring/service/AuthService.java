@@ -129,6 +129,8 @@ public class AuthService {
                         .position(doctor.getPosition())
                         .department(doctor.getDepartment())
                         .licenseNumber(doctor.getLicenseNumber())
+                        .achievements(doctor.getAchievements())
+                        .education(doctor.getEducation())
                         .build();
             }
             case PATIENT -> {
@@ -141,6 +143,10 @@ public class AuthService {
                         .role(user.getUserRole())
                         .birthDate(patient.getBirthDate())
                         .gender(patient.getGender().name())
+                        .heightCm(patient.getHeightCm())
+                        .weightKg(patient.getWeightKg())
+                        .chronicDiseases(patient.getChronicDiseases())
+                        .allergies(patient.getAllergies())
                         .build();
             }
             case ADMIN -> {
@@ -165,6 +171,8 @@ public class AuthService {
         doctor.setPosition(request.getPosition());
         doctor.setDepartment(request.getDepartment());
         doctor.setLicenseNumber(request.getLicenseNumber());
+        doctor.setAchievements(request.getAchievements());
+        doctor.setEducation(request.getEducation());
 
         return getProfile(userDetails);
     }
@@ -178,6 +186,10 @@ public class AuthService {
         updateUser(user, request.getName());
         patient.setGender(Gender.valueOf(request.getGender().toUpperCase()));
         patient.setBirthDate(request.getBirthDate());
+        patient.setHeightCm(request.getHeightCm());
+        patient.setWeightKg(request.getWeightKg());
+        patient.setChronicDiseases(request.getChronicDiseases());
+        patient.setAllergies(request.getAllergies());
 
         return getProfile(userDetails);
     }

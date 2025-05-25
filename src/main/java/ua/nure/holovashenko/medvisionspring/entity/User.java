@@ -31,7 +31,7 @@ public class User {
     private String pw;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "user_role", nullable = false)
     private UserRole userRole;
 
     @Column(name = "creation_datetime", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")

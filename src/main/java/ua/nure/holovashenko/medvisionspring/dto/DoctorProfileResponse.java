@@ -1,5 +1,6 @@
 package ua.nure.holovashenko.medvisionspring.dto;
 
+import jakarta.persistence.Column;
 import lombok.Builder;
 import lombok.Data;
 import ua.nure.holovashenko.medvisionspring.enums.UserRole;
@@ -15,4 +16,6 @@ public class DoctorProfileResponse implements UserProfileResponse {
     private String position;
     private String department;
     private String licenseNumber;
+    private String education;
+    private String achievements;
 }
