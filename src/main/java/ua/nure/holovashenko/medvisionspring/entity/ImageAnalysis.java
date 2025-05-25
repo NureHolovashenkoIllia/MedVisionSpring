@@ -2,7 +2,10 @@ package ua.nure.holovashenko.medvisionspring.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "image_analysis")
@@ -32,6 +35,10 @@ public class ImageAnalysis {
     @Column(name = "creation_datetime")
     private LocalDateTime creationDatetime;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "analysis_status")
+    private AnalysisStatus analysisStatus = AnalysisStatus.PENDING;
+
     @ManyToOne
     @JoinColumn(name = "image_file_id")
     private ImageFile imageFile;
@@ -47,4 +54,7 @@ public class ImageAnalysis {
     @ManyToOne
     @JoinColumn(name = "doctor_id")
     private User doctor;
+
+    @OneToMany(mappedBy = "imageAnalysis", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DiagnosisHistory> diagnosisHistoryList;
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ua.nure.holovashenko.medvisionspring.dto.AddNoteRequest;
 import ua.nure.holovashenko.medvisionspring.entity.*;
+import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.*;
 import ua.nure.holovashenko.medvisionspring.svm.ModelMetrics;
@@ -31,6 +32,7 @@ public class DoctorAnalysisService {
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final ImageAnalysisRepository imageAnalysisRepository;
+    private final DiagnosisHistoryRepository diagnosisHistoryRepository;
     private final ImageFileRepository imageFileRepository;
     private final AnalysisNoteRepository analysisNoteRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -40,8 +42,8 @@ public class DoctorAnalysisService {
         File tempFile = File.createTempFile("upload-", ".png");
         file.transferTo(tempFile);
 
-        User patient = userRepository.findById(patientId).orElseThrow();
-        User doctor = userRepository.findById(doctorId).orElseThrow();
+        User patient_user = userRepository.findById(patientId).orElseThrow();
+        User doctor_user = userRepository.findById(doctorId).orElseThrow();
 
         int prediction = svmService.classify(tempFile, false);
 
@@ -53,7 +55,7 @@ public class DoctorAnalysisService {
                 .imageFileType(file.getContentType())
                 .uploadedAt(LocalDateTime.now())
                 .imageFileUrl(imageUrl)
-                .uploadedBy(doctor)
+                .uploadedBy(doctor_user)
                 .build();
         imageFileRepository.save(imageFile);
 
@@ -69,7 +71,7 @@ public class DoctorAnalysisService {
                 .imageFileType(file.getContentType())
                 .uploadedAt(LocalDateTime.now())
                 .imageFileUrl(heatmapUrl)
-                .uploadedBy(doctor)
+                .uploadedBy(doctor_user)
                 .build();
         imageFileRepository.save(heatmapImage);
 
@@ -83,11 +85,25 @@ public class DoctorAnalysisService {
                 .analysisPrecision(metrics.getPrecision())
                 .analysisRecall(metrics.getRecall())
                 .creationDatetime(LocalDateTime.now())
-                .patient(patient)
-                .doctor(doctor)
+                .analysisStatus(AnalysisStatus.REQUIRES_REVISION)
+                .patient(patient_user)
+                .doctor(doctor_user)
                 .build();
 
-        return imageAnalysisRepository.save(analysis);
+        ImageAnalysis savedAnalysis = imageAnalysisRepository.save(analysis);
+
+        Doctor doctor = doctorRepository.findById(doctor_user.getUserId()).orElse(null);
+
+        DiagnosisHistory diagnosis = DiagnosisHistory.builder()
+                .imageAnalysis(savedAnalysis)
+                .diagnosisText(savedAnalysis.getAnalysisDiagnosis())
+                .changedByDoctor(doctor)
+                .changeReason("Діагноз SVM")
+                .build();
+
+        diagnosisHistoryRepository.save(diagnosis);
+
+        return savedAnalysis;
     }
 
     public Optional<ImageAnalysis> getAnalysis(Long id) {
