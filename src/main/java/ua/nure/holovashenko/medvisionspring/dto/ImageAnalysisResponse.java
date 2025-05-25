@@ -1,6 +1,7 @@
 package ua.nure.holovashenko.medvisionspring.dto;
 
 import lombok.Data;
+import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +13,7 @@ public class ImageAnalysisResponse {
     private Float analysisRecall;
     private String analysisDiagnosis;
     private LocalDateTime creationDatetime;
+    private AnalysisStatus analysisStatus;
 
     private Long imageFileId;
     private Long heatmapFileId;

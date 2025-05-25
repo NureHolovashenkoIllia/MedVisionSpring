@@ -8,6 +8,7 @@ import ua.nure.holovashenko.medvisionspring.dto.ImageAnalysisResponse;
 import ua.nure.holovashenko.medvisionspring.entity.Doctor;
 import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
 import ua.nure.holovashenko.medvisionspring.entity.User;
+import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.enums.UserRole;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.DoctorRepository;
@@ -61,6 +62,20 @@ public class AnalysisService {
                 .toList();
     }
 
+    public AnalysisStatus getStatusById(Long analysisId) {
+        return imageAnalysisRepository.findById(analysisId)
+                .map(ImageAnalysis::getAnalysisStatus)
+                .orElseThrow(() -> new ApiException("Аналіз не знайдено", HttpStatus.NOT_FOUND));
+    }
+
+    public void updateStatus(Long analysisId, AnalysisStatus newStatus) {
+        ImageAnalysis analysis = imageAnalysisRepository.findById(analysisId)
+                .orElseThrow(() -> new ApiException("Аналіз не знайдено", HttpStatus.NOT_FOUND));
+
+        analysis.setAnalysisStatus(newStatus);
+        imageAnalysisRepository.save(analysis);
+    }
+
     public boolean deleteAnalysis(Long id) {
         if (!imageAnalysisRepository.existsById(id)) {
             return false;
@@ -77,6 +92,7 @@ public class AnalysisService {
         dto.setAnalysisRecall(analysis.getAnalysisRecall());
         dto.setAnalysisDiagnosis(analysis.getAnalysisDiagnosis());
         dto.setCreationDatetime(analysis.getCreationDatetime());
+        dto.setAnalysisStatus(analysis.getAnalysisStatus());
 
         if (analysis.getImageFile() != null) {
             dto.setImageFileId(analysis.getImageFile().getImageFileId());

@@ -5,7 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ua.nure.holovashenko.medvisionspring.dto.ImageAnalysisResponse;
+import ua.nure.holovashenko.medvisionspring.dto.UpdateStatusRequest;
 import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
+import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.service.AnalysisService;
 
 import java.util.List;
@@ -40,6 +42,19 @@ public class AnalysisController {
         return analysisService.getAnalysesByPatientId(patientId);
     }
 
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> updateAnalysisStatus(
+            @PathVariable Long id,
+            @RequestBody UpdateStatusRequest request) {
+        analysisService.updateStatus(id, request.getStatus());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/status")
+    public ResponseEntity<AnalysisStatus> getAnalysisStatus(@PathVariable Long id) {
+        AnalysisStatus status = analysisService.getStatusById(id);
+        return ResponseEntity.ok(status);
+    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAnalysis(@PathVariable Long id) {
