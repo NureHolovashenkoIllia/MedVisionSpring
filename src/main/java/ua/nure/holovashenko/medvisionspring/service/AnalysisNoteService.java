@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import ua.nure.holovashenko.medvisionspring.dto.AddNoteRequest;
 import ua.nure.holovashenko.medvisionspring.dto.AnalysisNoteResponse;
+import ua.nure.holovashenko.medvisionspring.dto.BoundingBox;
 import ua.nure.holovashenko.medvisionspring.entity.AnalysisNote;
 import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
@@ -26,6 +27,20 @@ public class AnalysisNoteService {
                 .orElseThrow(() -> new ApiException("Аналіз не знайдено", HttpStatus.NOT_FOUND));
         return noteRepository.findByImageAnalysis(imageAnalysis).stream()
                 .map(this::mapToDto)
+                .toList();
+    }
+
+    public List<BoundingBox> getBoundingBoxesByAnalysisId(Long analysisId) {
+        ImageAnalysis analysis = imageAnalysisRepository.findById(analysisId)
+                .orElseThrow(() -> new ApiException("Аналіз не знайдено", HttpStatus.NOT_FOUND));
+
+        return noteRepository.findByImageAnalysis(analysis).stream()
+                .map(note -> new BoundingBox(
+                        note.getAnalysisNoteId(),
+                        note.getNoteAreaX(),
+                        note.getNoteAreaY(),
+                        note.getNoteAreaWidth(),
+                        note.getNoteAreaHeight()))
                 .toList();
     }
 
@@ -55,6 +70,10 @@ public class AnalysisNoteService {
     }
 
     private AnalysisNoteResponse mapToDto(AnalysisNote note) {
+        if (note.getNoteAreaWidth() <= 0 || note.getNoteAreaHeight() <= 0) {
+            throw new ApiException("Недійсний розмір області", HttpStatus.BAD_REQUEST);
+        }
+
         AnalysisNoteResponse dto = new AnalysisNoteResponse();
         dto.setAnalysisNoteId(note.getAnalysisNoteId());
         dto.setNoteText(note.getNoteText());

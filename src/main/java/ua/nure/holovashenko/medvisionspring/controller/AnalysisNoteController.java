@@ -6,6 +6,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ua.nure.holovashenko.medvisionspring.dto.AddNoteRequest;
 import ua.nure.holovashenko.medvisionspring.dto.AnalysisNoteResponse;
+import ua.nure.holovashenko.medvisionspring.dto.BoundingBox;
 import ua.nure.holovashenko.medvisionspring.service.AnalysisNoteService;
 
 import java.util.List;
@@ -24,6 +25,13 @@ public class AnalysisNoteController {
         return noteService.getNotesByAnalysisId(analysisId);
     }
 
+    @GetMapping("/by-analysis/{analysisId}/bounding-boxes")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
+    public ResponseEntity<List<BoundingBox>> getBoundingBoxes(@PathVariable Long analysisId) {
+        return ResponseEntity.ok(noteService.getBoundingBoxesByAnalysisId(analysisId));
+    }
+
+
     // Отримання певної замітки
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
@@ -34,7 +42,7 @@ public class AnalysisNoteController {
     }
 
     // Змінення інформації про замітку
-    @PostMapping("/{id}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
     public ResponseEntity<Void> updateNote(@PathVariable Long id,
                                            @RequestBody AddNoteRequest request) {
