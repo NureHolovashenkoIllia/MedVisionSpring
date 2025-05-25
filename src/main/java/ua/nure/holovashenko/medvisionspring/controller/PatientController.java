@@ -32,6 +32,17 @@ public class PatientController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/analyses/unviewed")
+    public ResponseEntity<List<ImageAnalysis>> getUnviewedAnalyses(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(patientService.getUnviewedAnalyses(userDetails));
+    }
+
+    @PostMapping("/analyses/{id}/mark-viewed")
+    public ResponseEntity<Void> markAsViewed(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        patientService.markAnalysisAsViewed(id, userDetails);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping(value = "/heatmap/{id}", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getHeatmap(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) throws IOException {
         return patientService.getHeatmapBytes(id, userDetails)

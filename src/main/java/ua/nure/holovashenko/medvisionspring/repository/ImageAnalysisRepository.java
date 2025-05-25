@@ -13,4 +13,6 @@ public interface ImageAnalysisRepository extends JpaRepository<ImageAnalysis, Lo
     List<ImageAnalysis> findAllByPatient(User patient);
 
     List<ImageAnalysis> findAllByDoctor(User doctor);
+
+    List<ImageAnalysis> findAllByPatientAndViewedFalse(User patient);
 }

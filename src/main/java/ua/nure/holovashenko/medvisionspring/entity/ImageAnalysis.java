@@ -39,6 +39,9 @@ public class ImageAnalysis {
     @Column(name = "analysis_status")
     private AnalysisStatus analysisStatus = AnalysisStatus.PENDING;
 
+    @Column(nullable = false, name = "viewed")
+    private boolean viewed = false;
+
     @ManyToOne
     @JoinColumn(name = "image_file_id")
     private ImageFile imageFile;
@@ -54,7 +57,4 @@ public class ImageAnalysis {
     @ManyToOne
     @JoinColumn(name = "doctor_id")
     private User doctor;
-
-    @OneToMany(mappedBy = "imageAnalysis", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DiagnosisHistory> diagnosisHistoryList;
 }

@@ -29,9 +29,36 @@ public class PatientService {
         return imageAnalysisRepository.findAllByPatient(patient);
     }
 
+    public List<ImageAnalysis> getUnviewedAnalyses(UserDetails userDetails) {
+        User patient = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("Пацієнта не знайдено"));
+        return imageAnalysisRepository.findAllByPatientAndViewedFalse(patient);
+    }
+
+
     public Optional<ImageAnalysis> getAnalysisById(Long id, UserDetails userDetails) {
-        return imageAnalysisRepository.findById(id)
+        Optional<ImageAnalysis> analysisOpt = imageAnalysisRepository.findById(id)
                 .filter(a -> a.getPatient().getEmail().equals(userDetails.getUsername()));
+
+        analysisOpt.ifPresent(analysis -> {
+            if (!analysis.isViewed()) {
+                analysis.setViewed(true);
+                imageAnalysisRepository.save(analysis);
+            }
+        });
+
+        return analysisOpt;
+    }
+
+    public void markAnalysisAsViewed(Long id, UserDetails userDetails) {
+        ImageAnalysis analysis = imageAnalysisRepository.findById(id)
+                .filter(a -> a.getPatient().getEmail().equals(userDetails.getUsername()))
+                .orElseThrow(() -> new IllegalArgumentException("Аналіз не знайдено"));
+
+        if (!analysis.isViewed()) {
+            analysis.setViewed(true);
+            imageAnalysisRepository.save(analysis);
+        }
     }
 
     public Optional<byte[]> getHeatmapBytes(Long id, UserDetails userDetails) throws IOException {
