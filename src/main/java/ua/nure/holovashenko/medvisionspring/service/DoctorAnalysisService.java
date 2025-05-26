@@ -12,6 +12,7 @@ import ua.nure.holovashenko.medvisionspring.entity.*;
 import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.*;
+import ua.nure.holovashenko.medvisionspring.svm.MetricsCalculator;
 import ua.nure.holovashenko.medvisionspring.svm.ModelMetrics;
 import ua.nure.holovashenko.medvisionspring.svm.SvmService;
 
@@ -37,13 +38,24 @@ public class DoctorAnalysisService {
     private final AnalysisNoteRepository analysisNoteRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private static final Map<Integer, String> CLASS_LABELS = Map.of(
+            3, "Emphysema — хронічне захворювання легень, що викликає задишку через ушкодження альвеол.",
+            4, "Fibrosis — рубцювання тканин легень, що ускладнює дихання та знижує об'єм легень.",
+            0, "Healthy — ознак патологій не виявлено, легені мають нормальну структуру.",
+            1, "Other — виявлені ознаки, які не відповідають жодному з основних класів патологій.",
+            2, "Pneumonia — запалення легень, часто викликане інфекцією, що супроводжується інфільтратами."
+    );
+
     @Transactional
     public ImageAnalysis analyzeAndSave(MultipartFile file, Long patientId, Long doctorId) throws IOException {
         File tempFile = File.createTempFile("upload-", ".png");
         file.transferTo(tempFile);
 
-        User patient_user = userRepository.findById(patientId).orElseThrow();
-        User doctor_user = userRepository.findById(doctorId).orElseThrow();
+        User patientUser = userRepository.findById(patientId)
+                .orElseThrow(() -> new ApiException("Пацієнт не знайдений", HttpStatus.NOT_FOUND));
+        User doctorUser = userRepository.findById(doctorId)
+                .orElseThrow(() -> new ApiException("Лікар не знайдений", HttpStatus.NOT_FOUND));
+
 
         int prediction = svmService.classify(tempFile, false);
 
@@ -55,7 +67,7 @@ public class DoctorAnalysisService {
                 .imageFileType(file.getContentType())
                 .uploadedAt(LocalDateTime.now())
                 .imageFileUrl(imageUrl)
-                .uploadedBy(doctor_user)
+                .uploadedBy(doctorUser)
                 .build();
         imageFileRepository.save(imageFile);
 
@@ -71,28 +83,33 @@ public class DoctorAnalysisService {
                 .imageFileType(file.getContentType())
                 .uploadedAt(LocalDateTime.now())
                 .imageFileUrl(heatmapUrl)
-                .uploadedBy(doctor_user)
+                .uploadedBy(doctorUser)
                 .build();
         imageFileRepository.save(heatmapImage);
 
-        ModelMetrics metrics = loadMetricsFromGcs("svm-metrics/metrics.json");
+        ModelMetrics metrics = svmService.loadMetrics("svm-metrics/full_metrics.json");
+        MetricsCalculator.ClassMetrics classMetrics = metrics.perClassMetrics().get(prediction);
+        float precision = classMetrics != null ? (float) classMetrics.precision() : 0f;
+        float recall = classMetrics != null ? (float) classMetrics.recall() : 0f;
+
+        String diagnosisText = CLASS_LABELS.getOrDefault(prediction, "Не вдалося точно визначити діагноз — результат невідомий.");
 
         ImageAnalysis analysis = ImageAnalysis.builder()
                 .imageFile(imageFile)
                 .heatmapFile(heatmapImage)
-                .analysisDiagnosis(prediction == 1 ? "Pathology detected" : "Normal")
-                .analysisAccuracy(metrics.getAccuracy())
-                .analysisPrecision(metrics.getPrecision())
-                .analysisRecall(metrics.getRecall())
+                .analysisDiagnosis(diagnosisText)
+                .analysisAccuracy((float) metrics.accuracy())
+                .analysisPrecision(precision)
+                .analysisRecall(recall)
                 .creationDatetime(LocalDateTime.now())
                 .analysisStatus(AnalysisStatus.REQUIRES_REVISION)
-                .patient(patient_user)
-                .doctor(doctor_user)
+                .patient(patientUser)
+                .doctor(doctorUser)
                 .build();
 
         ImageAnalysis savedAnalysis = imageAnalysisRepository.save(analysis);
 
-        Doctor doctor = doctorRepository.findById(doctor_user.getUserId()).orElse(null);
+        Doctor doctor = doctorRepository.findById(doctorUser.getUserId()).orElse(null);
 
         DiagnosisHistory diagnosis = DiagnosisHistory.builder()
                 .imageAnalysis(savedAnalysis)
@@ -160,17 +177,6 @@ public class DoctorAnalysisService {
             return true;
         } catch (Exception e) {
             return false;
-        }
-    }
-
-    public ModelMetrics loadMetricsFromGcs(String metricsPath) {
-        try {
-            byte[] data = gcsService.downloadFileGcs("gs://medvision458613/" + metricsPath);
-            return objectMapper.readValue(data, ModelMetrics.class);
-        } catch (IOException e) {
-            System.err.println("Не вдалося завантажити метрики з GCS: " + metricsPath);
-            e.printStackTrace();
-            return new ModelMetrics(0, 0, 0); // або можна повернути null, якщо хочеш обробляти помилки окремо
         }
     }
 }

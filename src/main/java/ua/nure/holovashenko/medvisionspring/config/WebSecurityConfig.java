@@ -58,6 +58,8 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/doctor/**").hasRole("DOCTOR")
                         .requestMatchers("/api/patient/**").hasRole("PATIENT")
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/svm/**").hasRole("ADMIN")
+                        .requestMatchers("/api/dataset/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/analysis/**").hasAnyRole("DOCTOR", "ADMIN")
 
                         // All other requests require authentication

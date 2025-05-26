@@ -1,14 +1,9 @@
 package ua.nure.holovashenko.medvisionspring.svm;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Map;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class ModelMetrics {
-    private float accuracy;
-    private float precision;
-    private float recall;
-}
+public record ModelMetrics(
+        double accuracy,
+        int[][] confusionMatrix,
+        Map<Integer, MetricsCalculator.ClassMetrics> perClassMetrics
+) {}
