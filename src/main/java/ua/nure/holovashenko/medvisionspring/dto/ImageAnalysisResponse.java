@@ -14,6 +14,7 @@ public class ImageAnalysisResponse {
     private String analysisDiagnosis;
     private LocalDateTime creationDatetime;
     private AnalysisStatus analysisStatus;
+    private Integer diagnosisClass;
 
     private Long imageFileId;
     private Long heatmapFileId;

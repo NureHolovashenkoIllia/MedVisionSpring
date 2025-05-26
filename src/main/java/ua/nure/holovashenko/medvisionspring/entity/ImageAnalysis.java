@@ -42,6 +42,9 @@ public class ImageAnalysis {
     @Column(nullable = false, name = "viewed")
     private boolean viewed = false;
 
+    @Column(name = "diagnosis_class")
+    private Integer diagnosisClass;
+
     @ManyToOne
     @JoinColumn(name = "image_file_id")
     private ImageFile imageFile;

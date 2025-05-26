@@ -20,6 +20,14 @@ public class SvmService {
     private final HeatmapGenerator heatmapGenerator;
     private final ImageUtils imageUtils;
 
+    public static final Map<Integer, String> CLASS_LABELS = Map.of(
+            0, "Healthy — ознак патологій не виявлено, легені мають нормальну структуру.",
+            1, "Other — виявлені ознаки, які не відповідають жодному з основних класів патологій.",
+            2, "Pneumonia — запалення легень, часто викликане інфекцією, що супроводжується інфільтратами.",
+            3, "Emphysema — хронічне захворювання легень, що викликає задишку через ушкодження альвеол.",
+            4, "Fibrosis — рубцювання тканин легень, що ускладнює дихання та знижує об'єм легень."
+    );
+
     @PostConstruct
     public void init() {
         modelManager.loadModels();

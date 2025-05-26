@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static ua.nure.holovashenko.medvisionspring.svm.SvmService.CLASS_LABELS;
+
 @Service
 @RequiredArgsConstructor
 public class DoctorAnalysisService {
@@ -37,14 +39,6 @@ public class DoctorAnalysisService {
     private final ImageFileRepository imageFileRepository;
     private final AnalysisNoteRepository analysisNoteRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    private static final Map<Integer, String> CLASS_LABELS = Map.of(
-            3, "Emphysema — хронічне захворювання легень, що викликає задишку через ушкодження альвеол.",
-            4, "Fibrosis — рубцювання тканин легень, що ускладнює дихання та знижує об'єм легень.",
-            0, "Healthy — ознак патологій не виявлено, легені мають нормальну структуру.",
-            1, "Other — виявлені ознаки, які не відповідають жодному з основних класів патологій.",
-            2, "Pneumonia — запалення легень, часто викликане інфекцією, що супроводжується інфільтратами."
-    );
 
     @Transactional
     public ImageAnalysis analyzeAndSave(MultipartFile file, Long patientId, Long doctorId) throws IOException {
@@ -103,6 +97,7 @@ public class DoctorAnalysisService {
                 .analysisRecall(recall)
                 .creationDatetime(LocalDateTime.now())
                 .analysisStatus(AnalysisStatus.REQUIRES_REVISION)
+                .diagnosisClass(prediction)
                 .patient(patientUser)
                 .doctor(doctorUser)
                 .build();

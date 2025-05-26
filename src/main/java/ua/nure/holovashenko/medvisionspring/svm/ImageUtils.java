@@ -11,6 +11,12 @@ import static org.bytedeco.opencv.global.opencv_core.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Base64;
 
 @Component
 public class ImageUtils {
@@ -32,11 +38,34 @@ public class ImageUtils {
         return resizedImage;
     }
 
-    /**
-     * Завантажує зображення з файлу у форматі BGR.
-     */
-    public Mat loadImage(String imagePath) {
-        return opencv_imgcodecs.imread(imagePath, opencv_imgcodecs.IMREAD_COLOR);
+    public static Mat loadImage(String imageUrl) {
+        try {
+            URL url = URI.create(imageUrl).toURL();
+            URLConnection connection = url.openConnection();
+
+            String contentType = connection.getContentType();
+            if (!contentType.startsWith("image/")) {
+                throw new IOException("Не зображення: " + contentType);
+            }
+
+            try (InputStream in = connection.getInputStream()) {
+                byte[] bytes = in.readAllBytes();
+
+                // Конвертуємо в BytePointer
+                BytePointer bytePointer = new BytePointer(bytes);
+
+                // Декодуємо
+                Mat image = opencv_imgcodecs.imdecode(new Mat(bytePointer), opencv_imgcodecs.IMREAD_COLOR);
+
+                if (image.empty()) {
+                    throw new IOException("Не вдалося розпізнати зображення: " + imageUrl);
+                }
+
+                return image;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Помилка при завантаженні зображення: " + imageUrl, e);
+        }
     }
 
     /**
@@ -78,6 +107,21 @@ public class ImageUtils {
      */
     public void printImageInfo(Mat image, String label) {
         System.out.println(label + ": " + image.cols() + "x" + image.rows() + ", channels: " + image.channels());
+    }
+
+    /**
+     * Експортує OpenCV Mat зображення у формат Base64 (PNG).
+     *
+     * @param mat Матриця зображення
+     * @return base64 рядок зображення
+     */
+    public static String encode(Mat mat) {
+        var buf = new org.bytedeco.javacpp.BytePointer();
+        opencv_imgcodecs.imencode(".png", mat, buf);
+        byte[] byteArray = new byte[(int) buf.limit()];
+        buf.get(byteArray);
+        buf.deallocate();
+        return Base64.getEncoder().encodeToString(byteArray);
     }
 
     /**

@@ -10,6 +10,10 @@ import org.bytedeco.opencv.opencv_ml.SVM;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
 import java.util.*;
 
 @Service
@@ -168,6 +172,18 @@ public class SvmModelManager {
             patchModel.save(path);
         } else {
             fullImageModel.save(path);
+        }
+    }
+
+    public double[][] getHeatmapData(String imageUrl, boolean fullImage) {
+        try (InputStream in = URI.create(imageUrl).toURL().openStream()) {
+            File tempFile = File.createTempFile("image_download_", ".png");
+            java.nio.file.Files.copy(in, tempFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            double[][] result = getHeatmapData(tempFile, fullImage);
+            tempFile.delete();
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Помилка при завантаженні зображення: " + imageUrl, e);
         }
     }
 

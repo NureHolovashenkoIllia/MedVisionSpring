@@ -29,7 +29,7 @@ public class SvmTrainingController {
 
             return ResponseEntity.ok("Моделі успішно натреновано та збережено.");
         } catch (Exception e) {
-            e.printStackTrace(); // ← додай це
+            e.printStackTrace();
             return ResponseEntity.internalServerError()
                     .body("Помилка під час тренування: " + e.getMessage());
         }

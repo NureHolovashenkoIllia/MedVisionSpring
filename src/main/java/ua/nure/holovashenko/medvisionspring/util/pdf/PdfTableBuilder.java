@@ -2,11 +2,16 @@ package ua.nure.holovashenko.medvisionspring.util.pdf;
 
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
+import com.lowagie.text.Image;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
+import ua.nure.holovashenko.medvisionspring.dto.ComparisonReport;
 
-import java.awt.*;
+import com.lowagie.text.*;
+
+import java.awt.Color;
+import java.util.Base64;
 
 public class PdfTableBuilder {
 
@@ -32,5 +37,67 @@ public class PdfTableBuilder {
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
         cell.setPadding(5);
         return cell;
+    }
+
+    public static PdfPTable buildComparisonTable(ComparisonReport report) {
+        PdfPTable table = new PdfPTable(3);
+        table.setWidthPercentage(100);
+
+        table.addCell(new Phrase(""));
+        table.addCell(new Phrase("FROM", PdfStyles.labelFont()));
+        table.addCell(new Phrase("TO", PdfStyles.labelFont()));
+
+        table.addCell(new Phrase("Діагноз", PdfStyles.textFont()));
+        table.addCell(new Phrase(report.getDiagnosisTextFrom()));
+        table.addCell(new Phrase(report.getDiagnosisTextTo()));
+
+        table.addCell(new Phrase("Точність (Accuracy)", PdfStyles.textFont()));
+        table.addCell(new Phrase(String.valueOf(report.getAccuracyFrom())));
+        table.addCell(new Phrase(String.valueOf(report.getAccuracyTo())));
+
+        table.addCell(new Phrase("Повнота (Recall)", PdfStyles.textFont()));
+        table.addCell(new Phrase(String.valueOf(report.getRecallFrom())));
+        table.addCell(new Phrase(String.valueOf(report.getRecallTo())));
+
+        table.addCell(new Phrase("Прецизійність (Precision)", PdfStyles.textFont()));
+        table.addCell(new Phrase(String.valueOf(report.getPrecisionFrom())));
+        table.addCell(new Phrase(String.valueOf(report.getPrecisionTo())));
+
+        return table;
+    }
+
+    public static PdfPTable buildImageComparisonTable(ComparisonReport report) {
+        PdfPTable table = new PdfPTable(3);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(10f);
+        table.setSpacingAfter(10f);
+
+        try {
+            table.addCell(new Phrase("FROM", PdfStyles.labelFont()));
+            table.addCell(new Phrase("TO", PdfStyles.labelFont()));
+            table.addCell(new Phrase("Heatmap різниці", PdfStyles.labelFont()));
+
+            byte[] fromBytes = Base64.getDecoder().decode(report.getFromImageBase64());
+            Image fromImage = PdfImageUtil.createImage(fromBytes, 150, 150);
+            fromImage.setAlt("FROM аналіз");
+            table.addCell(fromImage);
+
+            byte[] toBytes = Base64.getDecoder().decode(report.getToImageBase64());
+            Image toImage = PdfImageUtil.createImage(toBytes, 150, 150);
+            toImage.setAlt("TO аналіз");
+            table.addCell(toImage);
+
+            byte[] diffBytes = Base64.getDecoder().decode(report.getDiffHeatmap());
+            Image diffImage = PdfImageUtil.createImage(diffBytes, 150, 150);
+            diffImage.setAlt("Heatmap різниці");
+            table.addCell(diffImage);
+        } catch (Exception e) {
+            PdfPCell errorCell = new PdfPCell(new Phrase("Помилка при завантаженні зображень", PdfStyles.textFont()));
+            errorCell.setColspan(3);
+            errorCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            table.addCell(errorCell);
+        }
+
+        return table;
     }
 }

@@ -1,7 +1,7 @@
 package ua.nure.holovashenko.medvisionspring.util.pdf;
 
 import com.lowagie.text.BadElementException;
-import com.lowagie.text.*;
+import com.lowagie.text.Image;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,4 +27,10 @@ public class PdfImageUtil {
         return Image.getInstance(imageBytes);
     }
 
+    public static Image createImage(byte[] imageBytes, float width, float height) throws BadElementException, IOException {
+        Image image = Image.getInstance(imageBytes);
+        image.scaleToFit(width, height);
+        image.setAlignment(Image.ALIGN_CENTER);
+        return image;
+    }
 }
