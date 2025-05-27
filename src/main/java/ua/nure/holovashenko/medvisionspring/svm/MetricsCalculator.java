@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_ml.SVM;
 import org.springframework.stereotype.Service;
-import ua.nure.holovashenko.medvisionspring.service.GcsService;
+import ua.nure.holovashenko.medvisionspring.service.AzureBlobStorageService;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,10 +16,10 @@ import java.util.*;
 public class MetricsCalculator {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final GcsService gcsService;
+    private final AzureBlobStorageService azureStorageService;
 
-    public MetricsCalculator(GcsService gcsService) {
-        this.gcsService = gcsService;
+    public MetricsCalculator(AzureBlobStorageService azureStorageService) {
+        this.azureStorageService = azureStorageService;
     }
 
     public ModelMetrics calculate(SVM model, List<Mat> features, List<Integer> labels) {
@@ -49,12 +49,12 @@ public class MetricsCalculator {
         }
     }
 
-    public ModelMetrics loadMetricsFromGcs(String metricsPath) {
+    public ModelMetrics loadMetricsFromAzure(String blobName) {
         try {
-            byte[] data = gcsService.downloadFileGcs("gs://medvision458613/" + metricsPath);
+            byte[] data = azureStorageService.downloadFileByName(blobName);
             return objectMapper.readValue(data, ModelMetrics.class);
         } catch (IOException e) {
-            System.err.println("Не вдалося завантажити метрики з GCS: " + metricsPath);
+            System.err.println("Не вдалося завантажити метрики з Azure: " + blobName);
             e.printStackTrace();
             return new ModelMetrics(0.0, new int[0][0], Map.of());
         }

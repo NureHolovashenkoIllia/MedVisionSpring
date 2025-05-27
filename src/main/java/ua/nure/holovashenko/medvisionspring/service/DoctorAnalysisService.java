@@ -1,6 +1,5 @@
 package ua.nure.holovashenko.medvisionspring.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static ua.nure.holovashenko.medvisionspring.svm.SvmService.CLASS_LABELS;
@@ -30,7 +28,7 @@ import static ua.nure.holovashenko.medvisionspring.svm.SvmService.CLASS_LABELS;
 public class DoctorAnalysisService {
 
     private final SvmService svmService;
-    private final GcsService gcsService;
+    private final AzureBlobStorageService azureBlobStorageService;
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
@@ -54,7 +52,7 @@ public class DoctorAnalysisService {
         int prediction = svmService.classify(tempFile, false);
 
         String imageObjectName = "images/upload-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
-        String imageUrl = gcsService.uploadFile(tempFile, imageObjectName, file.getContentType());
+        String imageUrl = azureBlobStorageService.uploadFile(tempFile, imageObjectName, file.getContentType());
 
         ImageFile imageFile = ImageFile.builder()
                 .imageFileName(imageObjectName)
@@ -70,7 +68,7 @@ public class DoctorAnalysisService {
         svmService.saveMatToFile(heatmapMat, heatmapFile);
 
         String heatmapObjectName = "heatmaps/heatmap-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
-        String heatmapUrl = gcsService.uploadFile(heatmapFile, heatmapObjectName, file.getContentType());
+        String heatmapUrl = azureBlobStorageService.uploadFile(heatmapFile, heatmapObjectName, file.getContentType());
 
         ImageFile heatmapImage = ImageFile.builder()
                 .imageFileName(heatmapObjectName)
@@ -125,9 +123,9 @@ public class DoctorAnalysisService {
     public Optional<byte[]> getHeatmapBytes(Long id) throws IOException {
         return imageAnalysisRepository.findById(id).map(a -> {
             try {
-                return gcsService.downloadFile(a.getHeatmapFile().getImageFileUrl());
+                return azureBlobStorageService.downloadFileFromBlobUrl(a.getHeatmapFile().getImageFileUrl());
             } catch (IOException e) {
-                throw new RuntimeException("Cannot read heatmap from GCS", e);
+                throw new RuntimeException("Cannot read heatmap from Azure Blob Storage", e);
             }
         });
     }

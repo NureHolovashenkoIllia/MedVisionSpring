@@ -1,8 +1,8 @@
 package ua.nure.holovashenko.medvisionspring.svm;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.opencv.global.opencv_core;
-import org.bytedeco.opencv.global.opencv_imgcodecs;
 import org.bytedeco.opencv.global.opencv_ml;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.MatVector;
@@ -10,12 +10,11 @@ import org.bytedeco.opencv.opencv_ml.SVM;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SvmModelManager {
@@ -26,17 +25,28 @@ public class SvmModelManager {
     private SVM fullImageModel;
     private SVM patchModel;
 
-    public void loadModels() {
-        try {
-            fullImageModel = SVM.load("models/svm_full_model.xml");
-        } catch (Exception ignored) {
-            fullImageModel = SVM.create();
+    public synchronized SVM getFullImageModel() {
+        if (fullImageModel == null) {
+            log.info("Lazy-loading full image SVM model...");
+            fullImageModel = tryLoadModel("svm-models/svm_full_model.xml");
         }
+        return fullImageModel;
+    }
 
+    public synchronized SVM getPatchModel() {
+        if (patchModel == null) {
+            log.info("Lazy-loading patch SVM model...");
+            patchModel = tryLoadModel("svm-models/svm_patch_model.xml");
+        }
+        return patchModel;
+    }
+
+    private SVM tryLoadModel(String path) {
         try {
-            patchModel = SVM.load("models/svm_patch_model.xml");
-        } catch (Exception ignored) {
-            patchModel = SVM.create();
+            return SVM.load(path);
+        } catch (Exception e) {
+            log.warn("Could not load model at {}. Creating a new one.", path, e);
+            return SVM.create();
         }
     }
 

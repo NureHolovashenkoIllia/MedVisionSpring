@@ -2,13 +2,18 @@ package ua.nure.holovashenko.medvisionspring.svm;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.opencv.opencv_core.*;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SvmService {
@@ -28,9 +33,13 @@ public class SvmService {
             4, "Fibrosis — рубцювання тканин легень, що ускладнює дихання та знижує об'єм легень."
     );
 
-    @PostConstruct
-    public void init() {
-        modelManager.loadModels();
+    @Async
+    @EventListener(ApplicationReadyEvent.class)
+    public void preloadModelsInBackground() {
+        log.info("Starting async preload of SVM models...");
+        modelManager.getPatchModel();
+        modelManager.getFullImageModel();
+        log.info("SVM models preloaded successfully.");
     }
 
     public void trainFromDirectory(String datasetPath, boolean isPatchModel) {
@@ -73,6 +82,6 @@ public class SvmService {
     }
 
     public ModelMetrics loadMetrics(String path) {
-        return metricsCalculator.loadMetricsFromGcs(path);
+        return metricsCalculator.loadMetricsFromAzure(path);
     }
 }

@@ -21,7 +21,7 @@ public class PatientService {
     private final ImageAnalysisRepository imageAnalysisRepository;
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
-    private final GcsService gcsService;
+    private final AzureBlobStorageService azureBlobStorageService;
 
     public List<ImageAnalysis> getAnalyses(UserDetails userDetails) {
         User patient = userRepository.findByEmail(userDetails.getUsername())
@@ -64,9 +64,9 @@ public class PatientService {
     public Optional<byte[]> getHeatmapBytes(Long id, UserDetails userDetails) throws IOException {
         return getAnalysisById(id, userDetails).map(a -> {
             try {
-                return gcsService.downloadFile(a.getHeatmapFile().getImageFileUrl());
+                return azureBlobStorageService.downloadFileFromBlobUrl(a.getHeatmapFile().getImageFileUrl());
             } catch (IOException e) {
-                throw new RuntimeException("Не вдалося зчитати heatmap з GCS", e);
+                throw new RuntimeException("Cannot read heatmap from Azure Blob Storage", e);
             }
         });
     }
