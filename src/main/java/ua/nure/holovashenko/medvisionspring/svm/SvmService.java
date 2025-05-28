@@ -6,8 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.opencv.opencv_core.*;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 
 import java.io.File;
 import java.util.List;
@@ -37,8 +39,7 @@ public class SvmService {
     @EventListener(ApplicationReadyEvent.class)
     public void preloadModelsInBackground() {
         log.info("Starting async preload of SVM models...");
-        modelManager.getPatchModel();
-        modelManager.getFullImageModel();
+        modelManager.loadModels();
         log.info("SVM models preloaded successfully.");
     }
 
@@ -52,10 +53,12 @@ public class SvmService {
     }
 
     public int classify(File imageFile, boolean isPatchModel) {
+        ensureModelsReady();
         return modelManager.classify(imageFile, isPatchModel);
     }
 
     public float evaluate(List<File> images, List<Integer> labels, boolean isPatchModel) {
+        ensureModelsReady();
         return modelManager.evaluate(images, labels, isPatchModel);
     }
 
@@ -64,12 +67,14 @@ public class SvmService {
     }
 
     public Mat generateHeatmap(File imageFile, boolean isPatchModel) {
+        ensureModelsReady();
         Mat inputImage = ImageUtils.loadAndResizeImage(imageFile.getAbsolutePath());
         double[][] heatmapData = modelManager.getHeatmapData(imageFile, isPatchModel);
         return heatmapGenerator.generateHeatmap(inputImage, heatmapData);
     }
 
     public void saveModel(String path, boolean isPatchModel) {
+        ensureModelsReady();
         modelManager.saveModel(path, isPatchModel);
     }
 
@@ -83,5 +88,11 @@ public class SvmService {
 
     public ModelMetrics loadMetrics(String path) {
         return metricsCalculator.loadMetricsFromAzure(path);
+    }
+
+    private void ensureModelsReady() {
+        if (!modelManager.areModelsReady()) {
+            throw new ApiException("SVM models are still loading. Please try again later.", HttpStatus.SERVICE_UNAVAILABLE);
+        }
     }
 }

@@ -7,7 +7,9 @@ import org.bytedeco.opencv.global.opencv_ml;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.MatVector;
 import org.bytedeco.opencv.opencv_ml.SVM;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 
 import java.io.File;
 import java.io.InputStream;
@@ -21,33 +23,34 @@ public class SvmModelManager {
 
     private final ImagePatchExtractor patchExtractor;
     private final MetricsCalculator metricsCalculator;
+    private volatile boolean modelsReady = false;
 
     private SVM fullImageModel;
     private SVM patchModel;
 
-    public synchronized SVM getFullImageModel() {
-        if (fullImageModel == null) {
-            log.info("Lazy-loading full image SVM model...");
-            fullImageModel = tryLoadModel("svm-models/svm_full_model.xml");
-        }
-        return fullImageModel;
+    public boolean areModelsReady() {
+        return modelsReady;
     }
 
-    public synchronized SVM getPatchModel() {
-        if (patchModel == null) {
-            log.info("Lazy-loading patch SVM model...");
-            patchModel = tryLoadModel("svm-models/svm_patch_model.xml");
-        }
-        return patchModel;
-    }
-
-    private SVM tryLoadModel(String path) {
+    public void loadModels() {
         try {
-            return SVM.load(path);
+            patchModel = SVM.load("svm-models/svm_patch_model.xml");
+            log.info("Patch-based SVM model successfully loaded");
         } catch (Exception e) {
-            log.warn("Could not load model at {}. Creating a new one.", path, e);
-            return SVM.create();
+            patchModel = SVM.create();
+            log.warn("Patch-based SVM model could not be loaded. New model created.");
         }
+
+        try {
+            fullImageModel = SVM.load("svm-models/svm_full_model.xml");
+            log.info("Full image SVM model successfully loaded");
+        } catch (Exception e) {
+            fullImageModel = SVM.create();
+            log.warn("Full image SVM model could not be loaded. New model created.");
+        }
+
+        modelsReady = true;
+        log.info("All SVM models are ready.");
     }
 
     public void trainFullImageModel(Dataset dataset) {
@@ -186,6 +189,10 @@ public class SvmModelManager {
     }
 
     public double[][] getHeatmapData(String imageUrl, boolean fullImage) {
+        if (!areModelsReady()) {
+            throw new ApiException("SVM models are still loading. Please try again later.", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
         try (InputStream in = URI.create(imageUrl).toURL().openStream()) {
             File tempFile = File.createTempFile("image_download_", ".png");
             java.nio.file.Files.copy(in, tempFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);

@@ -58,8 +58,8 @@ public class WebSecurityConfig {
                         // Role-based access
                         .requestMatchers("/api/doctor/**").hasRole("DOCTOR")
                         .requestMatchers("/api/patient/**").hasRole("PATIENT")
-                        .requestMatchers("/api/analysis/compare").hasRole("PATIENT")
-                        .requestMatchers("/api/analysis/compare/pdf").hasRole("PATIENT")
+                        .requestMatchers("/api/analysis/compare").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
+                        .requestMatchers("/api/analysis/compare/pdf").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/api/svm/**").hasRole("ADMIN")
                         .requestMatchers("/api/dataset/**").hasRole("ADMIN")

@@ -3,33 +3,23 @@ package ua.nure.holovashenko.medvisionspring.service;
 import lombok.RequiredArgsConstructor;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import ua.nure.holovashenko.medvisionspring.dto.ComparisonReport;
 import ua.nure.holovashenko.medvisionspring.dto.ImageAnalysisResponse;
-import ua.nure.holovashenko.medvisionspring.entity.Doctor;
 import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
 import ua.nure.holovashenko.medvisionspring.entity.User;
 import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.enums.UserRole;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
-import ua.nure.holovashenko.medvisionspring.repository.DoctorRepository;
 import ua.nure.holovashenko.medvisionspring.repository.ImageAnalysisRepository;
-import ua.nure.holovashenko.medvisionspring.repository.PatientRepository;
 import ua.nure.holovashenko.medvisionspring.repository.UserRepository;
 import ua.nure.holovashenko.medvisionspring.svm.HeatmapGenerator;
 import ua.nure.holovashenko.medvisionspring.svm.ImageUtils;
 import ua.nure.holovashenko.medvisionspring.svm.SvmModelManager;
-import ua.nure.holovashenko.medvisionspring.util.pdf.PdfAnalysisReportGenerator;
 import ua.nure.holovashenko.medvisionspring.util.pdf.PdfComparisonReportUtil;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-
-import static ua.nure.holovashenko.medvisionspring.svm.SvmService.CLASS_LABELS;
 
 @Service
 @RequiredArgsConstructor
