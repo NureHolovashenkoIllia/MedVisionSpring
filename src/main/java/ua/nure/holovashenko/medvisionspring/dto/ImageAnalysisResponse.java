@@ -11,7 +11,9 @@ public class ImageAnalysisResponse {
     private Float analysisAccuracy;
     private Float analysisPrecision;
     private Float analysisRecall;
+    private String analysisDetails;
     private String analysisDiagnosis;
+    private String treatmentRecommendations;
     private LocalDateTime creationDatetime;
     private AnalysisStatus analysisStatus;
     private Integer diagnosisClass;

@@ -22,4 +22,5 @@ public class DoctorRegisterRequest {
     private String position;
     private String department;
     private String licenseNumber;
+    private String medicalInstitution;
 }

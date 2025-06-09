@@ -11,12 +11,14 @@ import ua.nure.holovashenko.medvisionspring.entity.*;
 import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.*;
+import ua.nure.holovashenko.medvisionspring.svm.DiagnosisInfo;
 import ua.nure.holovashenko.medvisionspring.svm.MetricsCalculator;
 import ua.nure.holovashenko.medvisionspring.svm.ModelMetrics;
 import ua.nure.holovashenko.medvisionspring.svm.SvmService;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -84,12 +86,14 @@ public class DoctorAnalysisService {
         float precision = classMetrics != null ? (float) classMetrics.precision() : 0f;
         float recall = classMetrics != null ? (float) classMetrics.recall() : 0f;
 
-        String diagnosisText = CLASS_LABELS.getOrDefault(prediction, "Не вдалося точно визначити діагноз — результат невідомий.");
+        DiagnosisInfo diagnosisText = CLASS_LABELS.getOrDefault(prediction, new DiagnosisInfo());
 
         ImageAnalysis analysis = ImageAnalysis.builder()
                 .imageFile(imageFile)
                 .heatmapFile(heatmapImage)
-                .analysisDiagnosis(diagnosisText)
+                .analysisDetails(diagnosisText.getAnalysisDetails())
+                .analysisDiagnosis(diagnosisText.getAnalysisDiagnosis())
+                .treatmentRecommendations(diagnosisText.getTreatmentRecommendations())
                 .analysisAccuracy((float) metrics.accuracy())
                 .analysisPrecision(precision)
                 .analysisRecall(recall)
@@ -112,6 +116,12 @@ public class DoctorAnalysisService {
                 .build();
 
         diagnosisHistoryRepository.save(diagnosis);
+
+        Patient patient = patientRepository.findById(patientUser.getUserId())
+                .orElseThrow(() -> new ApiException("Пацієнт не знайдений", HttpStatus.NOT_FOUND));
+
+        patient.setLastExamDate(LocalDate.now());
+        patientRepository.save(patient);
 
         return savedAnalysis;
     }

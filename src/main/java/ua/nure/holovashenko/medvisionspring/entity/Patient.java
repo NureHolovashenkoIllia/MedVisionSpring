@@ -39,6 +39,12 @@ public class Patient {
     @Column(name = "allergies", columnDefinition = "TEXT")
     private String allergies;
 
+    @Column(name = "address", length = 255)
+    private String address;
+
+    @Column(name = "last_exam_date")
+    private LocalDate lastExamDate;
+
     @OneToOne
     @MapsId
     @OnDelete(action = OnDeleteAction.CASCADE)

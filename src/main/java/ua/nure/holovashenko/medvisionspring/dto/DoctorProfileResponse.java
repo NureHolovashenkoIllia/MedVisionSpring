@@ -18,4 +18,5 @@ public class DoctorProfileResponse implements UserProfileResponse {
     private String licenseNumber;
     private String education;
     private String achievements;
+    private String medicalInstitution;
 }

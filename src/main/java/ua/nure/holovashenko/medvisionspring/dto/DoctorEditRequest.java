@@ -25,4 +25,7 @@ public class DoctorEditRequest {
 
     @NotBlank(message = "Досягнення не можуть бути порожніми")
     private String achievements;
+
+    @NotBlank(message = "Місце роботи не може бути порожнім")
+    private String medicalInstitution;
 }

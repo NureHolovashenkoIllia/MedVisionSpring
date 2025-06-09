@@ -50,6 +50,7 @@ public class AuthService {
         doctor.setPosition(request.getPosition());
         doctor.setDepartment(request.getDepartment());
         doctor.setLicenseNumber(request.getLicenseNumber());
+        doctor.setMedicalInstitution(request.getMedicalInstitution());
         doctorRepository.save(doctor);
 
         String jwt = jwtService.generateToken(savedUser);
@@ -130,6 +131,7 @@ public class AuthService {
                         .department(doctor.getDepartment())
                         .licenseNumber(doctor.getLicenseNumber())
                         .achievements(doctor.getAchievements())
+                        .medicalInstitution(doctor.getMedicalInstitution())
                         .education(doctor.getEducation())
                         .build();
             }
@@ -147,6 +149,8 @@ public class AuthService {
                         .weightKg(patient.getWeightKg())
                         .chronicDiseases(patient.getChronicDiseases())
                         .allergies(patient.getAllergies())
+                        .address(patient.getAddress())
+                        .lastExamDate(patient.getLastExamDate())
                         .build();
             }
             case ADMIN -> {
@@ -173,6 +177,7 @@ public class AuthService {
         doctor.setLicenseNumber(request.getLicenseNumber());
         doctor.setAchievements(request.getAchievements());
         doctor.setEducation(request.getEducation());
+        doctor.setMedicalInstitution(request.getMedicalInstitution());
 
         return getProfile(userDetails);
     }
@@ -190,6 +195,7 @@ public class AuthService {
         patient.setWeightKg(request.getWeightKg());
         patient.setChronicDiseases(request.getChronicDiseases());
         patient.setAllergies(request.getAllergies());
+        patient.setAddress(request.getAddress());
 
         return getProfile(userDetails);
     }

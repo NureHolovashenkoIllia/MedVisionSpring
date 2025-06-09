@@ -6,6 +6,6 @@ import lombok.Data;
 public class DiagnosisHistoryRequest {
     private Long analysisId;
     private String diagnosisText;
-    private Long doctorId; // опціонально
-    private String reason; // опціонально
+    private Long doctorId;
+    private String reason;
 }

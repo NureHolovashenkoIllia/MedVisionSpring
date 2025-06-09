@@ -35,6 +35,9 @@ public class Doctor {
     @Column(name = "achievements", columnDefinition = "TEXT")
     private String achievements;
 
+    @Column(name = "medical_institution", length = 255)
+    private String medicalInstitution;
+
     @OneToOne
     @MapsId
     @OnDelete(action = OnDeleteAction.CASCADE)

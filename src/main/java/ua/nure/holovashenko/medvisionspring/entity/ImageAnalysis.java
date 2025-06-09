@@ -29,8 +29,16 @@ public class ImageAnalysis {
     private Float analysisRecall;
 
     @Lob
+    @Column(name = "analysis_details", columnDefinition = "TEXT")
+    private String analysisDetails;
+
+    @Lob
     @Column(name = "analysis_diagnosis", columnDefinition = "TEXT")
     private String analysisDiagnosis;
+
+    @Lob
+    @Column(name = "treatment_recommendations", columnDefinition = "TEXT")
+    private String treatmentRecommendations;
 
     @Column(name = "creation_datetime")
     private LocalDateTime creationDatetime;

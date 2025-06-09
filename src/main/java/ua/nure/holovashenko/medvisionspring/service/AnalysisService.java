@@ -109,8 +109,16 @@ public class AnalysisService {
         report.setToId(toId);
         report.setDiagnosisClassFrom(diagnosisClassFrom);
         report.setDiagnosisClassTo(diagnosisClassTo);
+
+        report.setAnalysisDetailsFrom(from.getAnalysisDetails());
+        report.setAnalysisDetailsTo(to.getAnalysisDetails());
+
         report.setDiagnosisTextFrom(from.getAnalysisDiagnosis());
         report.setDiagnosisTextTo(to.getAnalysisDiagnosis());
+
+        report.setTreatmentRecommendationsFrom(from.getTreatmentRecommendations());
+        report.setTreatmentRecommendationsTo(to.getTreatmentRecommendations());
+
         report.setDiffHeatmap(encodedDiffHeatmap);
         report.setFromImageBase64(fromImageBase64);
         report.setToImageBase64(toImageBase64);
@@ -157,7 +165,10 @@ public class AnalysisService {
         dto.setAnalysisAccuracy(analysis.getAnalysisAccuracy());
         dto.setAnalysisPrecision(analysis.getAnalysisPrecision());
         dto.setAnalysisRecall(analysis.getAnalysisRecall());
+        dto.setAnalysisDetails(analysis.getAnalysisDetails());
         dto.setAnalysisDiagnosis(analysis.getAnalysisDiagnosis());
+        dto.setTreatmentRecommendations(analysis.getTreatmentRecommendations());
+        dto.setDiagnosisClass(analysis.getDiagnosisClass());
         dto.setCreationDatetime(analysis.getCreationDatetime());
         dto.setAnalysisStatus(analysis.getAnalysisStatus());
 

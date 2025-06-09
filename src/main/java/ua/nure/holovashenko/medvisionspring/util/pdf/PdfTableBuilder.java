@@ -44,22 +44,30 @@ public class PdfTableBuilder {
         table.setWidthPercentage(100);
 
         table.addCell(new Phrase(""));
-        table.addCell(new Phrase("FROM", PdfStyles.labelFont()));
-        table.addCell(new Phrase("TO", PdfStyles.labelFont()));
+        table.addCell(new Phrase("Обстеження №" + report.getFromId().toString(), PdfStyles.labelFont()));
+        table.addCell(new Phrase("Обстеження №" + report.getToId().toString(), PdfStyles.labelFont()));
+
+        table.addCell(new Phrase("Деталі обстеження", PdfStyles.textFont()));
+        table.addCell(new Phrase(report.getAnalysisDetailsFrom()));
+        table.addCell(new Phrase(report.getAnalysisDetailsTo()));
 
         table.addCell(new Phrase("Діагноз", PdfStyles.textFont()));
         table.addCell(new Phrase(report.getDiagnosisTextFrom()));
         table.addCell(new Phrase(report.getDiagnosisTextTo()));
 
-        table.addCell(new Phrase("Точність (Accuracy)", PdfStyles.textFont()));
+        table.addCell(new Phrase("Рекомендації щодо лікування", PdfStyles.textFont()));
+        table.addCell(new Phrase(report.getTreatmentRecommendationsFrom()));
+        table.addCell(new Phrase(report.getTreatmentRecommendationsTo()));
+
+        table.addCell(new Phrase("Загальна точність класифікації", PdfStyles.textFont()));
         table.addCell(new Phrase(String.valueOf(report.getAccuracyFrom())));
         table.addCell(new Phrase(String.valueOf(report.getAccuracyTo())));
 
-        table.addCell(new Phrase("Повнота (Recall)", PdfStyles.textFont()));
+        table.addCell(new Phrase("Повнота виявлення патологій", PdfStyles.textFont()));
         table.addCell(new Phrase(String.valueOf(report.getRecallFrom())));
         table.addCell(new Phrase(String.valueOf(report.getRecallTo())));
 
-        table.addCell(new Phrase("Прецизійність (Precision)", PdfStyles.textFont()));
+        table.addCell(new Phrase("Точність виявлення патологій", PdfStyles.textFont()));
         table.addCell(new Phrase(String.valueOf(report.getPrecisionFrom())));
         table.addCell(new Phrase(String.valueOf(report.getPrecisionTo())));
 
@@ -73,18 +81,18 @@ public class PdfTableBuilder {
         table.setSpacingAfter(10f);
 
         try {
-            table.addCell(new Phrase("FROM", PdfStyles.labelFont()));
-            table.addCell(new Phrase("TO", PdfStyles.labelFont()));
+            table.addCell(new Phrase("Обстеження №" + report.getFromId().toString(), PdfStyles.labelFont()));
+            table.addCell(new Phrase("Обстеження №" + report.getToId().toString(), PdfStyles.labelFont()));
             table.addCell(new Phrase("Heatmap різниці", PdfStyles.labelFont()));
 
             byte[] fromBytes = Base64.getDecoder().decode(report.getFromImageBase64());
             Image fromImage = PdfImageUtil.createImage(fromBytes, 150, 150);
-            fromImage.setAlt("FROM аналіз");
+            fromImage.setAlt("Обстеження №" + report.getFromId());
             table.addCell(fromImage);
 
             byte[] toBytes = Base64.getDecoder().decode(report.getToImageBase64());
             Image toImage = PdfImageUtil.createImage(toBytes, 150, 150);
-            toImage.setAlt("TO аналіз");
+            toImage.setAlt("Обстеження №" + report.getToId());
             table.addCell(toImage);
 
             byte[] diffBytes = Base64.getDecoder().decode(report.getDiffHeatmap());

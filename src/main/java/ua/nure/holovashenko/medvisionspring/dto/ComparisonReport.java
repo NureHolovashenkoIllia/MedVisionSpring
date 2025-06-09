@@ -7,8 +7,14 @@ public class ComparisonReport {
     private Long fromId;
     private Long toId;
 
+    private String analysisDetailsFrom;
+    private String analysisDetailsTo;
+
     private String diagnosisTextFrom;
     private String diagnosisTextTo;
+
+    private String treatmentRecommendationsFrom;
+    private String treatmentRecommendationsTo;
 
     private int diagnosisClassFrom;
     private int diagnosisClassTo;

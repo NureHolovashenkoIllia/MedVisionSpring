@@ -27,7 +27,7 @@ public class PdfAnalysisReportGenerator {
     }
 
     private static void addTitle(Document document) throws DocumentException {
-        Paragraph title = new Paragraph("Медичний звіт про аналіз зображення", PdfStyles.titleFont());
+        Paragraph title = new Paragraph("Медичний звіт результатів КТ обстеження", PdfStyles.titleFont());
         title.setAlignment(Element.ALIGN_CENTER);
         title.setSpacingAfter(20);
         document.add(title);
@@ -36,19 +36,25 @@ public class PdfAnalysisReportGenerator {
     private static void addAnalysisTable(Document document, ImageAnalysis analysis) throws DocumentException {
         PdfPTable table = PdfTableBuilder.createTwoColumnTable();
 
-        table.addCell(PdfTableBuilder.headerCell("Номер аналізу"));
+        table.addCell(PdfTableBuilder.headerCell("Номер обстеження"));
         table.addCell(PdfTableBuilder.textCell(String.valueOf(analysis.getImageAnalysisId())));
+
+        table.addCell(PdfTableBuilder.headerCell("Деталі обстеження"));
+        table.addCell(PdfTableBuilder.textCell(analysis.getAnalysisDetails()));
 
         table.addCell(PdfTableBuilder.headerCell("Діагноз"));
         table.addCell(PdfTableBuilder.textCell(analysis.getAnalysisDiagnosis()));
 
-        table.addCell(PdfTableBuilder.headerCell("Точність"));
+        table.addCell(PdfTableBuilder.headerCell("Рекомендації щодо лікування"));
+        table.addCell(PdfTableBuilder.textCell(analysis.getTreatmentRecommendations()));
+
+        table.addCell(PdfTableBuilder.headerCell("Загальна точність класифікації"));
         table.addCell(PdfTableBuilder.textCell(String.format("%.2f", analysis.getAnalysisAccuracy())));
 
-        table.addCell(PdfTableBuilder.headerCell("Precision"));
+        table.addCell(PdfTableBuilder.headerCell("Точність виявлення патологій"));
         table.addCell(PdfTableBuilder.textCell(String.format("%.2f", analysis.getAnalysisPrecision())));
 
-        table.addCell(PdfTableBuilder.headerCell("Recall"));
+        table.addCell(PdfTableBuilder.headerCell("Повнота виявлення патологій"));
         table.addCell(PdfTableBuilder.textCell(String.format("%.2f", analysis.getAnalysisRecall())));
 
         document.add(table);
@@ -74,7 +80,7 @@ public class PdfAnalysisReportGenerator {
         document.add(imgTitle);
 
         Image heatmap = PdfImageUtil.loadImageFromPath(analysis.getHeatmapFile().getImageFileUrl());
-        heatmap.scaleToFit(350, 350);
+        heatmap.scaleToFit(300, 300);
         heatmap.setAlignment(Image.ALIGN_CENTER);
         document.add(heatmap);
     }

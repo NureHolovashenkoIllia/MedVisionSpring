@@ -29,4 +29,6 @@ public class PatientEditRequest {
     private String chronicDiseases;
 
     private String allergies;
+
+    private String address;
 }

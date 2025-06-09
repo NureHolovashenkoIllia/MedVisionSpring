@@ -1,5 +1,6 @@
 package ua.nure.holovashenko.medvisionspring.dto;
 
+import jakarta.persistence.Column;
 import lombok.Builder;
 import lombok.Data;
 import ua.nure.holovashenko.medvisionspring.enums.UserRole;
@@ -21,4 +22,7 @@ public class PatientProfileResponse implements UserProfileResponse {
     private BigDecimal weightKg;
     private String chronicDiseases;
     private String allergies;
+
+    private String address;
+    private LocalDate lastExamDate;
 }
