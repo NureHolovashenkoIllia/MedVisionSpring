@@ -36,6 +36,14 @@ public class DiagnosisHistory {
     @Column(name = "change_datetime")
     private LocalDateTime changeDatetime;
 
+    @Lob
+    @Column(name = "analysis_details", columnDefinition = "TEXT")
+    private String analysisDetails;
+
+    @Lob
+    @Column(name = "treatment_recommendations", columnDefinition = "TEXT")
+    private String treatmentRecommendations;
+
     @PrePersist
     public void onCreate() {
         this.changeDatetime = LocalDateTime.now();

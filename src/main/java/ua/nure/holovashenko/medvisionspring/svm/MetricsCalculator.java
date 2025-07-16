@@ -5,10 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_ml.SVM;
 import org.springframework.stereotype.Service;
-import ua.nure.holovashenko.medvisionspring.service.AzureBlobStorageService;
+import ua.nure.holovashenko.medvisionspring.storage.AzureBlobStorageService;
+import ua.nure.holovashenko.medvisionspring.storage.BlobStorageService;
+import ua.nure.holovashenko.medvisionspring.storage.LocalStorageService;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 @Slf4j
@@ -17,9 +20,17 @@ public class MetricsCalculator {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AzureBlobStorageService azureStorageService;
+    private final LocalStorageService localStorageService;
+    private final BlobStorageService blobStorageService;
 
-    public MetricsCalculator(AzureBlobStorageService azureStorageService) {
+    public MetricsCalculator(
+            AzureBlobStorageService azureStorageService,
+            LocalStorageService localStorageService,
+            BlobStorageService blobStorageService
+    ) {
         this.azureStorageService = azureStorageService;
+        this.localStorageService = localStorageService;
+        this.blobStorageService = blobStorageService;
     }
 
     public ModelMetrics calculate(SVM model, List<Mat> features, List<Integer> labels) {
@@ -41,21 +52,49 @@ public class MetricsCalculator {
         return new ModelMetrics(accuracy, confusionMatrix, perClassMetrics);
     }
 
-    public void save(ModelMetrics metrics, String path) {
+    public void save(ModelMetrics metrics, String blobName) {
+//        try {
+//            // Збереження у тимчасовий файл
+//            File tempFile = File.createTempFile("metrics", ".json");
+//            objectMapper.writerWithDefaultPrettyPrinter().writeValue(tempFile, metrics);
+//
+//            // Спроба завантажити в Azure
+//            azureStorageService.uploadFile(tempFile, blobName, "application/json");
+//
+//            log.info("Метрики успішно збережено в Azure: {}", blobName);
+//        } catch (Exception azureEx) {
+//            log.warn("Збереження в Azure не вдалося. Переходимо до локального сховища...", azureEx);
+//
+//            try {
+//                Path localPath = new File(localStorageService.uploadFileFromBytes(
+//                        objectMapper.writeValueAsBytes(metrics),
+//                        blobName,
+//                        "application/json"
+//                )).toPath();
+//                log.info("Метрики збережено в локальному сховищі: {}", localPath);
+//            } catch (IOException ioEx) {
+//                log.error("Не вдалося зберегти метрики навіть у локальному сховищі.", ioEx);
+//            }
+//        }
+        log.warn("Тимчасово використовується лише локальне сховище для збереження метрик");
         try {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(path), metrics);
-        } catch (Exception e) {
-            log.error("Не вдалося зберегти метрики в файл: {}", path, e);
+            Path localPath = new File(localStorageService.uploadFileFromBytes(
+                    objectMapper.writeValueAsBytes(metrics),
+                    blobName,
+                    "application/json"
+            )).toPath();
+            log.info("Метрики збережено в локальному сховищі: {}", localPath);
+        } catch (IOException ioEx) {
+            log.error("Не вдалося зберегти метрики навіть у локальному сховищі.", ioEx);
         }
     }
 
     public ModelMetrics loadMetricsFromAzure(String blobName) {
         try {
-            byte[] data = azureStorageService.downloadFileByName(blobName);
+            byte[] data = blobStorageService.downloadFileByName(blobName);
             return objectMapper.readValue(data, ModelMetrics.class);
-        } catch (IOException e) {
-            System.err.println("Не вдалося завантажити метрики з Azure: " + blobName);
-            e.printStackTrace();
+        } catch (Exception e) {
+            log.error("Не вдалося завантажити метрики: {}", blobName, e);
             return new ModelMetrics(0.0, new int[0][0], Map.of());
         }
     }

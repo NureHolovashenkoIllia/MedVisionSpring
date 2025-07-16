@@ -13,4 +13,6 @@ public class DiagnosisHistoryResponse {
     private String doctorName;
     private String reason;
     private LocalDateTime timestamp;
+    private String analysisDetails;
+    private String treatmentRecommendations;
 }

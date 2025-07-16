@@ -11,6 +11,8 @@ import ua.nure.holovashenko.medvisionspring.entity.*;
 import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.*;
+import ua.nure.holovashenko.medvisionspring.storage.BlobStorageService;
+import ua.nure.holovashenko.medvisionspring.storage.ResilientBlobStorageService;
 import ua.nure.holovashenko.medvisionspring.svm.DiagnosisInfo;
 import ua.nure.holovashenko.medvisionspring.svm.MetricsCalculator;
 import ua.nure.holovashenko.medvisionspring.svm.ModelMetrics;
@@ -30,7 +32,7 @@ import static ua.nure.holovashenko.medvisionspring.svm.SvmService.CLASS_LABELS;
 public class DoctorAnalysisService {
 
     private final SvmService svmService;
-    private final AzureBlobStorageService azureBlobStorageService;
+    private final BlobStorageService blobStorageService;
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
@@ -54,7 +56,7 @@ public class DoctorAnalysisService {
         int prediction = svmService.classify(tempFile, false);
 
         String imageObjectName = "images/upload-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
-        String imageUrl = azureBlobStorageService.uploadFile(tempFile, imageObjectName, file.getContentType());
+        String imageUrl = blobStorageService.uploadFile(tempFile, imageObjectName, file.getContentType());
 
         ImageFile imageFile = ImageFile.builder()
                 .imageFileName(imageObjectName)
@@ -70,7 +72,7 @@ public class DoctorAnalysisService {
         svmService.saveMatToFile(heatmapMat, heatmapFile);
 
         String heatmapObjectName = "heatmaps/heatmap-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
-        String heatmapUrl = azureBlobStorageService.uploadFile(heatmapFile, heatmapObjectName, file.getContentType());
+        String heatmapUrl = blobStorageService.uploadFile(heatmapFile, heatmapObjectName, file.getContentType());
 
         ImageFile heatmapImage = ImageFile.builder()
                 .imageFileName(heatmapObjectName)
@@ -81,7 +83,7 @@ public class DoctorAnalysisService {
                 .build();
         imageFileRepository.save(heatmapImage);
 
-        ModelMetrics metrics = svmService.loadMetrics("svm-metrics/full_metrics.json");
+        ModelMetrics metrics = svmService.loadMetrics("svm-models/full_metrics.json");
         MetricsCalculator.ClassMetrics classMetrics = metrics.perClassMetrics().get(prediction);
         float precision = classMetrics != null ? (float) classMetrics.precision() : 0f;
         float recall = classMetrics != null ? (float) classMetrics.recall() : 0f;
@@ -133,7 +135,7 @@ public class DoctorAnalysisService {
     public Optional<byte[]> getHeatmapBytes(Long id) throws IOException {
         return imageAnalysisRepository.findById(id).map(a -> {
             try {
-                return azureBlobStorageService.downloadFileFromBlobUrl(a.getHeatmapFile().getImageFileUrl());
+                return blobStorageService.downloadFileFromBlobUrl(a.getHeatmapFile().getImageFileUrl());
             } catch (IOException e) {
                 throw new RuntimeException("Cannot read heatmap from Azure Blob Storage", e);
             }

@@ -87,7 +87,7 @@ public class SvmModelManager {
         fullImageModel.train(trainingData, opencv_ml.ROW_SAMPLE, labels);
 
         ModelMetrics metrics = metricsCalculator.calculate(fullImageModel, featureList, dataset.labels());
-        metricsCalculator.save(metrics, "models/full_metrics.json");
+        metricsCalculator.save(metrics, "svm-models/full_metrics.json");
     }
 
     public void trainPatchModel(Dataset dataset) {
@@ -123,7 +123,7 @@ public class SvmModelManager {
         patchModel.train(trainingData, opencv_ml.ROW_SAMPLE, labels);
 
         ModelMetrics metrics = metricsCalculator.calculate(patchModel, featureList, labelList);
-        metricsCalculator.save(metrics, "models/patch_metrics.json");
+        metricsCalculator.save(metrics, "svm-models/patch_metrics.json");
     }
 
     public int classify(File imageFile, boolean isPatch) {

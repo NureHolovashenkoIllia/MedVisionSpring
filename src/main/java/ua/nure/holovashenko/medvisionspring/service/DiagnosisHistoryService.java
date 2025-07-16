@@ -47,10 +47,14 @@ public class DiagnosisHistoryService {
                 .diagnosisText(request.getDiagnosisText())
                 .changedByDoctor(doctor)
                 .changeReason(request.getReason())
+                .analysisDetails(request.getAnalysisDetails())
+                .treatmentRecommendations(request.getTreatmentRecommendations())
                 .build();
 
         // оновити поточний діагноз у image_analysis
         analysis.setAnalysisDiagnosis(request.getDiagnosisText());
+        analysis.setAnalysisDetails(request.getAnalysisDetails());
+        analysis.setTreatmentRecommendations(request.getTreatmentRecommendations());
         imageAnalysisRepository.save(analysis);
 
         return mapToDto(diagnosisHistoryRepository.save(diagnosis));
@@ -65,6 +69,8 @@ public class DiagnosisHistoryService {
                         : null)
                 .reason(entity.getChangeReason())
                 .timestamp(entity.getChangeDatetime())
+                .analysisDetails(entity.getAnalysisDetails())
+                .treatmentRecommendations(entity.getTreatmentRecommendations())
                 .build();
     }
 }

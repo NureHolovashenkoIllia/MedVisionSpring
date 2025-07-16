@@ -21,10 +21,10 @@ public class AppConfig {
 
     @Bean
     public OpenAPI openAPI() {
-        Server server = new Server();
-        server.setUrl("https://medvision-app-eebbebcgb4fpf7e7.centralus-01.azurewebsites.net");
+//        Server server = new Server();
+//        server.setUrl("https://medvision-app-eebbebcgb4fpf7e7.centralus-01.azurewebsites.net");
         return new OpenAPI()
-                .servers(List.of(server))
+//                .servers(List.of(server))
                 .info(new Info()
                         .title("MedVision API")
                         .version("1.0")

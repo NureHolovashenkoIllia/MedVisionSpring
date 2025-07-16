@@ -19,7 +19,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
         "ua.nure.holovashenko.medvisionspring.repository",
         "ua.nure.holovashenko.medvisionspring.security",
         "ua.nure.holovashenko.medvisionspring.service",
-        "ua.nure.holovashenko.medvisionspring.util", // якщо є інші утиліти
+        "ua.nure.holovashenko.medvisionspring.storage",
+        "ua.nure.holovashenko.medvisionspring.util",
         "ua.nure.holovashenko.medvisionspring.svm"
 })
 @EntityScan(basePackages = {

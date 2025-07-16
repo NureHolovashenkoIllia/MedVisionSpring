@@ -8,4 +8,6 @@ public class DiagnosisHistoryRequest {
     private String diagnosisText;
     private Long doctorId;
     private String reason;
+    private String analysisDetails;
+    private String treatmentRecommendations;
 }
