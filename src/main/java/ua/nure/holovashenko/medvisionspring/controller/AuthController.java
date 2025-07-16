@@ -20,16 +20,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @Operation(summary = "Реєстрація лікаря")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Успішна реєстрація"),
-            @ApiResponse(responseCode = "409", description = "Користувач з таким email вже існує")
-    })
-    @PostMapping("/register/doctor")
-    public ResponseEntity<AuthResponse> registerDoctor(@Valid @RequestBody DoctorRegisterRequest request) {
-        return ResponseEntity.ok(authService.registerDoctor(request));
-    }
-
     @Operation(summary = "Реєстрація пацієнта")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Успішна реєстрація"),

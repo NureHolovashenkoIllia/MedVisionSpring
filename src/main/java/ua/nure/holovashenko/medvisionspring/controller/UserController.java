@@ -3,16 +3,20 @@ package ua.nure.holovashenko.medvisionspring.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ua.nure.holovashenko.medvisionspring.dto.ChangeUserRoleRequest;
+import ua.nure.holovashenko.medvisionspring.dto.DoctorRegisterRequest;
 import ua.nure.holovashenko.medvisionspring.entity.User;
 import ua.nure.holovashenko.medvisionspring.service.UserService;
+import ua.nure.holovashenko.medvisionspring.util.email.EmailService;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Контролер для адміністрування користувачів системи (тільки для ADMIN).
@@ -23,6 +27,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final EmailService emailService;
 
     /**
      * Отримати користувача за його ID.
@@ -100,4 +105,25 @@ public class UserController {
         userService.changeUserRole(id, request.getNewRole());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
+
+    @Operation(summary = "Зареєструвати лікаря (тільки для ADMIN)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Лікаря зареєстровано"),
+            @ApiResponse(responseCode = "400", description = "Некоректні дані або email вже існує"),
+            @ApiResponse(responseCode = "403", description = "Доступ заборонено")
+    })
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/register-doctor")
+    public ResponseEntity<User> registerDoctor(@RequestBody @Valid DoctorRegisterRequest request) {
+        String generatedPassword = request.getPassword() != null && !request.getPassword().isBlank()
+                ? request.getPassword()
+                : UUID.randomUUID().toString().substring(0, 10);
+
+        request.setPassword(generatedPassword);
+
+        User newDoctor = userService.registerDoctor(request);
+        emailService.sendDoctorCredentials(request.getEmail(), request.getName(), generatedPassword);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newDoctor);
+    }
+
 }

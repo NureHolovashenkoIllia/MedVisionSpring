@@ -32,31 +32,6 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthResponse registerDoctor(DoctorRegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ApiException("Користувач з таким email вже існує", HttpStatus.CONFLICT);
-        }
-
-        User user = new User();
-        user.setUserName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPw(passwordEncoder.encode(request.getPassword()));
-        user.setUserRole(UserRole.DOCTOR);
-
-        User savedUser = userRepository.save(user);
-
-        Doctor doctor = new Doctor();
-        doctor.setUser(savedUser);
-        doctor.setPosition(request.getPosition());
-        doctor.setDepartment(request.getDepartment());
-        doctor.setLicenseNumber(request.getLicenseNumber());
-        doctor.setMedicalInstitution(request.getMedicalInstitution());
-        doctorRepository.save(doctor);
-
-        String jwt = jwtService.generateToken(savedUser);
-        return new AuthResponse(jwt);
-    }
-
     public AuthResponse registerPatient(PatientRegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ApiException("Користувач з таким email вже існує", HttpStatus.CONFLICT);

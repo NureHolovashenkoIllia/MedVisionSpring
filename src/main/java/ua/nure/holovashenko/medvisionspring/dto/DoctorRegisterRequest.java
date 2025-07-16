@@ -15,10 +15,7 @@ public class DoctorRegisterRequest {
     @Email(message = "Невірний формат email")
     private String email;
 
-    @NotBlank(message = "Пароль не може бути порожнім")
-    @Size(min = 8, message = "Пароль повинен містити щонайменше 8 символів")
     private String password;
-
     private String position;
     private String department;
     private String licenseNumber;

@@ -21,9 +21,8 @@ public class JwtService {
     private Key signingKey;
 
     public JwtService() {
-        Dotenv dotenv = Dotenv.load(); // автоматично читає .env
 
-        String secret = dotenv.get("JWT_SECRET");
+        String secret = "mySuperSecretKeyThatIsAtLeast32CharactersLong!";//dotenv.get("JWT_SECRET");
 
         if (secret == null || secret.length() < 32) {
             throw new IllegalStateException("JWT_SECRET is missing or too short");
