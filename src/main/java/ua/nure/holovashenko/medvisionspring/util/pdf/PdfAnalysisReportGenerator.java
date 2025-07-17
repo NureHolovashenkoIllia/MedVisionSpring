@@ -8,12 +8,18 @@ import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
 import java.io.*;
 import java.time.format.DateTimeFormatter;
 
+import static ua.nure.holovashenko.medvisionspring.util.pdf.PdfComparisonReportUtil.loadWatermarkBytes;
+
 public class PdfAnalysisReportGenerator {
 
     public static byte[] generateAnalysisPdf(ImageAnalysis analysis) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document(PageSize.A4, 50, 50, 60, 50);
         PdfWriter writer = PdfWriter.getInstance(document, baos);
+
+        byte[] watermarkBytes = loadWatermarkBytes();
+
+        writer.setPageEvent(new WatermarkPageEvent(watermarkBytes));
         writer.setPageEvent(new FooterPageEvent());
         document.open();
 

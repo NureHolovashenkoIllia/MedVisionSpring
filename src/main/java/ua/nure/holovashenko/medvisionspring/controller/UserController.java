@@ -106,7 +106,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @Operation(summary = "Зареєструвати лікаря (тільки для ADMIN)")
+    @Operation(summary = "Зареєструвати лікаря (ADMIN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Лікаря зареєстровано"),
             @ApiResponse(responseCode = "400", description = "Некоректні дані або email вже існує"),
@@ -125,5 +125,4 @@ public class UserController {
         emailService.sendDoctorCredentials(request.getEmail(), request.getName(), generatedPassword);
         return ResponseEntity.status(HttpStatus.CREATED).body(newDoctor);
     }
-
 }

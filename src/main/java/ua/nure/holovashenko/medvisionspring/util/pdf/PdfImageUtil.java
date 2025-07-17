@@ -3,11 +3,12 @@ package ua.nure.holovashenko.medvisionspring.util.pdf;
 import com.lowagie.text.BadElementException;
 import com.lowagie.text.Image;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class PdfImageUtil {
 
@@ -15,13 +16,18 @@ public class PdfImageUtil {
         byte[] imageBytes;
 
         if (path.startsWith("http://") || path.startsWith("https://")) {
-            // Завантаження з URL через URI
+            // Завантаження з HTTP(S)
             try (InputStream in = URI.create(path).toURL().openStream()) {
                 imageBytes = in.readAllBytes();
             }
+        } else if (path.startsWith("file:/")) {
+            // Завантаження з file: URI
+            Path filePath = Paths.get(URI.create(path));
+            imageBytes = Files.readAllBytes(filePath);
         } else {
-            // Завантаження з локального шляху
-            imageBytes = Files.readAllBytes(new File(path).toPath());
+            // Звичайний локальний шлях (без file:)
+            Path filePath = Paths.get(path);
+            imageBytes = Files.readAllBytes(filePath);
         }
 
         return Image.getInstance(imageBytes);
