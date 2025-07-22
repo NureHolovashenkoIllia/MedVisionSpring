@@ -36,4 +36,7 @@ public class User {
 
     @Column(name = "creation_datetime", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime creationDatetime = LocalDateTime.now();
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
 }

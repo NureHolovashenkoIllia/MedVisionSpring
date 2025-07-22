@@ -2,13 +2,16 @@ package ua.nure.holovashenko.medvisionspring.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import ua.nure.holovashenko.medvisionspring.dto.*;
 import ua.nure.holovashenko.medvisionspring.entity.Doctor;
 import ua.nure.holovashenko.medvisionspring.entity.Patient;
@@ -20,7 +23,16 @@ import ua.nure.holovashenko.medvisionspring.repository.DoctorRepository;
 import ua.nure.holovashenko.medvisionspring.repository.PatientRepository;
 import ua.nure.holovashenko.medvisionspring.repository.UserRepository;
 import ua.nure.holovashenko.medvisionspring.security.JwtService;
+import ua.nure.holovashenko.medvisionspring.storage.BlobStorageService;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -31,6 +43,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final BlobStorageService blobStorageService;
 
     public AuthResponse registerPatient(PatientRegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -182,5 +195,69 @@ public class AuthService {
 
     private void updateUser(User user, String name) {
         user.setUserName(name);
+    }
+
+    @Transactional
+    public String uploadAvatar(UserDetails userDetails, MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new ApiException("Файл не може бути порожнім", HttpStatus.BAD_REQUEST);
+        }
+
+        User user = getUser(userDetails);
+
+        String oldAvatarUrl = user.getAvatarUrl();
+        if (oldAvatarUrl != null && !oldAvatarUrl.isBlank()) {
+            try {
+                Path oldPath = Paths.get(oldAvatarUrl);
+                Path storageDirPath = Paths.get("local_images").toAbsolutePath();
+                String oldBlobName = storageDirPath.relativize(oldPath).toString().replace("\\", "/");
+                blobStorageService.deleteFile(oldBlobName);
+            } catch (IOException e) {
+                log.warn("Не вдалося видалити старий аватар: {}", e.getMessage());
+            }
+        }
+
+        String originalFileName = file.getOriginalFilename();
+        String extension = originalFileName != null && originalFileName.contains(".")
+                ? originalFileName.substring(originalFileName.lastIndexOf("."))
+                : "";
+        String blobName = "avatars/" + UUID.randomUUID() + extension;
+
+        try {
+            byte[] data = file.getBytes();
+            String storedPath = blobStorageService.uploadFileFromBytes(data, blobName, file.getContentType());
+
+            user.setAvatarUrl(storedPath);
+            userRepository.save(user);
+
+            return storedPath;
+        } catch (IOException e) {
+            throw new ApiException("Помилка збереження файлу: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<byte[]> getUserAvatar(UserDetails userDetails) {
+        User user = getUser(userDetails);
+
+        if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) {
+            throw new ApiException("Аватар не знайдено", HttpStatus.NOT_FOUND);
+        }
+
+        try {
+            Path avatarPath = new File(user.getAvatarUrl()).toPath();
+
+            String contentType = Files.probeContentType(avatarPath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            byte[] data = Files.readAllBytes(avatarPath);
+
+            return ResponseEntity.ok()
+                    .header("Content-Type", contentType)
+                    .body(data);
+        } catch (IOException e) {
+            throw new ApiException("Не вдалося завантажити аватар: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

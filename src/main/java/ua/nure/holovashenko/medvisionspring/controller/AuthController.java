@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ua.nure.holovashenko.medvisionspring.dto.*;
 import ua.nure.holovashenko.medvisionspring.service.AuthService;
 
@@ -80,4 +81,17 @@ public class AuthController {
         return ResponseEntity.ok(authService.editPatientProfile(userDetails, request));
     }
 
+    @PostMapping("/avatar")
+    @Operation(summary = "Завантажити аватар користувача")
+    public ResponseEntity<String> uploadAvatar(@AuthenticationPrincipal UserDetails userDetails,
+                                               @RequestParam("file") MultipartFile file) {
+        String avatarUrl = authService.uploadAvatar(userDetails, file);
+        return ResponseEntity.ok(avatarUrl);
+    }
+
+    @GetMapping("/avatar")
+    @Operation(summary = "Отримати аватар у байтах (image/*)")
+    public ResponseEntity<byte[]> getAvatarBytes(@AuthenticationPrincipal UserDetails userDetails) {
+        return authService.getUserAvatar(userDetails);
+    }
 }
