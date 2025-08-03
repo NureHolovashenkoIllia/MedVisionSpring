@@ -10,6 +10,7 @@ import ua.nure.holovashenko.medvisionspring.entity.User;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -44,21 +45,13 @@ public class JwtService {
     }
 
     public String generateToken(User user) {
-        return generateToken(
-                org.springframework.security.core.userdetails.User
-                        .withUsername(user.getEmail())
-                        .password(user.getPw())
-                        .roles(user.getUserRole().name())
-                        .build(),
-                user.getUserRole().name()
-        );
-    }
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getUserRole().name());
+        claims.put("userId", user.getUserId());
 
-
-    public String generateToken(UserDetails userDetails, String role) {
         return Jwts.builder()
-                .setClaims(Map.of("role", role))
-                .setSubject(userDetails.getUsername())
+                .setClaims(claims)
+                .setSubject(user.getEmail())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                 .signWith(signingKey, SignatureAlgorithm.HS256)

@@ -70,6 +70,16 @@ public class PatientService {
         });
     }
 
+    public Optional<byte[]> getImageBytes(Long id, UserDetails userDetails) throws IOException {
+        return getAnalysisById(id, userDetails).map(a -> {
+            try {
+                return blobStorageService.downloadFileFromBlobUrl(a.getImageFile().getImageFileUrl());
+            } catch (IOException e) {
+                throw new RuntimeException("Cannot read image from Azure Blob Storage", e);
+            }
+        });
+    }
+
     public byte[] exportAnalysisToPdf(Long id, UserDetails userDetails) throws IOException {
         ImageAnalysis analysis = getAnalysisById(id, userDetails)
                 .orElseThrow(() -> new IllegalArgumentException("Аналіз не знайдено або немає доступу"));

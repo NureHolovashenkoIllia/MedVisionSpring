@@ -12,7 +12,6 @@ import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.*;
 import ua.nure.holovashenko.medvisionspring.storage.BlobStorageService;
-import ua.nure.holovashenko.medvisionspring.storage.ResilientBlobStorageService;
 import ua.nure.holovashenko.medvisionspring.svm.DiagnosisInfo;
 import ua.nure.holovashenko.medvisionspring.svm.MetricsCalculator;
 import ua.nure.holovashenko.medvisionspring.svm.ModelMetrics;
@@ -138,6 +137,16 @@ public class DoctorAnalysisService {
                 return blobStorageService.downloadFileFromBlobUrl(a.getHeatmapFile().getImageFileUrl());
             } catch (IOException e) {
                 throw new RuntimeException("Cannot read heatmap from Azure Blob Storage", e);
+            }
+        });
+    }
+
+    public Optional<byte[]> getImageBytes(Long id) throws IOException {
+        return imageAnalysisRepository.findById(id).map(a -> {
+            try {
+                return blobStorageService.downloadFileFromBlobUrl(a.getImageFile().getImageFileUrl());
+            } catch (IOException e) {
+                throw new RuntimeException("Cannot read image from Azure Blob Storage", e);
             }
         });
     }

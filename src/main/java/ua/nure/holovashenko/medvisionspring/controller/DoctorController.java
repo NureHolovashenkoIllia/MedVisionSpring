@@ -44,6 +44,13 @@ public class DoctorController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping(value = "/image/{id}", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getImage(@PathVariable Long id) throws IOException {
+        return doctorAnalysisService.getImageBytes(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/analysis/{id}/diagnosis")
     public ResponseEntity<Void> updateDiagnosis(@PathVariable Long id, @RequestBody String diagnosis) {
         boolean updated = doctorAnalysisService.updateDiagnosis(id, diagnosis);

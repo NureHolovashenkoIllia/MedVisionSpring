@@ -50,6 +50,13 @@ public class PatientController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping(value = "/image/{id}", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getImage(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) throws IOException {
+        return patientService.getImageBytes(id, userDetails)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/analyses/pdf/{id}")
     public ResponseEntity<byte[]> exportAnalysisToPdf(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) throws IOException {
         byte[] pdf = patientService.exportAnalysisToPdf(id, userDetails);

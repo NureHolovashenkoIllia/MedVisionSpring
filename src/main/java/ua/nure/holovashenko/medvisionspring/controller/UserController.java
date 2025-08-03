@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -124,5 +125,11 @@ public class UserController {
         User newDoctor = userService.registerDoctor(request);
         emailService.sendDoctorCredentials(request.getEmail(), request.getName(), generatedPassword);
         return ResponseEntity.status(HttpStatus.CREATED).body(newDoctor);
+    }
+
+    @PreAuthorize("hasRole('DOCTOR')")
+    @GetMapping("/{id}/avatar")
+    public ResponseEntity<Resource> getUserAvatar(@PathVariable Long id) {
+        return userService.getUserAvatarById(id);
     }
 }

@@ -60,7 +60,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/patient/**").hasRole("PATIENT")
                         .requestMatchers("/api/analysis/compare").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
                         .requestMatchers("/api/analysis/compare/pdf").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").hasAnyRole("ADMIN", "DOCTOR")
                         .requestMatchers("/api/svm/**").hasRole("ADMIN")
                         .requestMatchers("/api/dataset/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/analysis/**").hasAnyRole("DOCTOR", "ADMIN")

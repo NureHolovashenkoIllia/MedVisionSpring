@@ -2,8 +2,12 @@ package ua.nure.holovashenko.medvisionspring.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.MediaType;
 import ua.nure.holovashenko.medvisionspring.dto.DoctorRegisterRequest;
 import ua.nure.holovashenko.medvisionspring.entity.Doctor;
 import ua.nure.holovashenko.medvisionspring.entity.Patient;
@@ -14,6 +18,10 @@ import ua.nure.holovashenko.medvisionspring.repository.DoctorRepository;
 import ua.nure.holovashenko.medvisionspring.repository.PatientRepository;
 import ua.nure.holovashenko.medvisionspring.repository.UserRepository;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -95,4 +103,33 @@ public class UserService {
 
         return savedUser;
     }
+
+    public ResponseEntity<Resource> getUserAvatarById(Long userId) {
+        User user = getUserById(userId);
+
+        String avatarPath = user.getAvatarUrl();
+        if (avatarPath == null || avatarPath.isBlank()) {
+            throw new ApiException("Аватар не знайдено", HttpStatus.NOT_FOUND);
+        }
+
+        try {
+            Path path = Paths.get(avatarPath);
+            Resource resource = new UrlResource(path.toUri());
+
+            if (!resource.exists()) {
+                throw new ApiException("Файл аватара не знайдено", HttpStatus.NOT_FOUND);
+            }
+
+            String contentType = Files.probeContentType(path);
+            if (contentType == null) contentType = "application/octet-stream";
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(resource);
+
+        } catch (IOException e) {
+            throw new ApiException("Помилка при зчитуванні аватара", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }
