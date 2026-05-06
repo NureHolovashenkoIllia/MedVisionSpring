@@ -13,13 +13,18 @@ import ua.nure.holovashenko.medvisionspring.dto.*;
 import ua.nure.holovashenko.medvisionspring.entity.Doctor;
 import ua.nure.holovashenko.medvisionspring.entity.Patient;
 import ua.nure.holovashenko.medvisionspring.entity.User;
+import ua.nure.holovashenko.medvisionspring.entity.UserHospitalMembership;
 import ua.nure.holovashenko.medvisionspring.enums.Gender;
+import ua.nure.holovashenko.medvisionspring.enums.MembershipStatus;
 import ua.nure.holovashenko.medvisionspring.enums.UserRole;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.DoctorRepository;
 import ua.nure.holovashenko.medvisionspring.repository.PatientRepository;
+import ua.nure.holovashenko.medvisionspring.repository.UserHospitalMembershipRepository;
 import ua.nure.holovashenko.medvisionspring.repository.UserRepository;
 import ua.nure.holovashenko.medvisionspring.security.JwtService;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +33,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
+    private final UserHospitalMembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -108,6 +114,7 @@ public class AuthService {
                         .achievements(doctor.getAchievements())
                         .medicalInstitution(doctor.getMedicalInstitution())
                         .education(doctor.getEducation())
+                        .hospitals(getHospitalResponses(user))
                         .build();
             }
             case PATIENT -> {
@@ -126,6 +133,7 @@ public class AuthService {
                         .allergies(patient.getAllergies())
                         .address(patient.getAddress())
                         .lastExamDate(patient.getLastExamDate())
+                        .hospitals(getHospitalResponses(user))
                         .build();
             }
             case ADMIN -> {
@@ -134,6 +142,7 @@ public class AuthService {
                         .name(user.getUserName())
                         .email(user.getEmail())
                         .role(user.getUserRole())
+                        .hospitals(getHospitalResponses(user))
                         .build();
             }
             default -> throw new ApiException("Невідома роль", HttpStatus.BAD_REQUEST);
@@ -182,5 +191,21 @@ public class AuthService {
 
     private void updateUser(User user, String name) {
         user.setUserName(name);
+    }
+
+    private List<MyHospitalResponse> getHospitalResponses(User user) {
+        return membershipRepository.findAllByUserAndStatus(user, MembershipStatus.ACTIVE).stream()
+                .map(this::mapMembershipToHospitalResponse)
+                .toList();
+    }
+
+    private MyHospitalResponse mapMembershipToHospitalResponse(UserHospitalMembership membership) {
+        return MyHospitalResponse.builder()
+                .hospitalId(membership.getHospital().getHospitalId())
+                .name(membership.getHospital().getName())
+                .code(membership.getHospital().getCode())
+                .hospitalRole(membership.getHospitalRole())
+                .membershipStatus(membership.getStatus())
+                .build();
     }
 }

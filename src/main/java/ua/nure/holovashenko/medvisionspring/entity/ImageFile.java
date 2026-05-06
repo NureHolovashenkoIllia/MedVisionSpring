@@ -39,4 +39,12 @@ public class ImageFile {
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "uploaded_by_user_id")
     private User uploadedBy;
+
+    @ManyToOne
+    @JoinColumn(name = "hospital_id")
+    private Hospital hospital;
+
+    @ManyToOne
+    @JoinColumn(name = "treatment_id")
+    private Treatment treatment;
 }

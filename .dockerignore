@@ -1,0 +1,12 @@
+.git
+.idea
+.vscode
+.DS_Store
+target
+data
+local_images
+backups
+*.log
+.env
+.env.*
+svm-models/*.xml

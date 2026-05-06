@@ -22,4 +22,9 @@ public class ImageAnalysisResponse {
     private Long heatmapFileId;
     private Long patientId;
     private Long doctorId;
+    private Long hospitalId;
+    private Long treatmentId;
+    private Long analysisJobId;
+    private Long modelVersionId;
+    private String modelVersion;
 }

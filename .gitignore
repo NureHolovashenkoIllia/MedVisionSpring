@@ -1,5 +1,10 @@
 HELP.md
 .env
+.env.*
+.DS_Store
+data/
+local_images/
+backups/
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

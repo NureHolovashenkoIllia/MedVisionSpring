@@ -4,6 +4,8 @@ import lombok.Builder;
 import lombok.Data;
 import ua.nure.holovashenko.medvisionspring.enums.UserRole;
 
+import java.util.List;
+
 @Data
 @Builder
 public class AdminProfileResponse implements UserProfileResponse {
@@ -11,4 +13,5 @@ public class AdminProfileResponse implements UserProfileResponse {
     private String name;
     private String email;
     private UserRole role;
+    private List<MyHospitalResponse> hospitals;
 }

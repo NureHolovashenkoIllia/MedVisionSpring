@@ -19,6 +19,7 @@ import ua.nure.holovashenko.medvisionspring.svm.SvmModelManager;
 import ua.nure.holovashenko.medvisionspring.util.pdf.PdfComparisonReportUtil;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -85,6 +86,8 @@ public class AnalysisService {
                 .orElseThrow(() -> new ApiException("Аналіз FROM не знайдено", HttpStatus.NOT_FOUND));
         ImageAnalysis to = imageAnalysisRepository.findById(toId)
                 .orElseThrow(() -> new ApiException("Аналіз TO не знайдено", HttpStatus.NOT_FOUND));
+
+        validateComparableAnalyses(from, to);
 
         // Отримати діагнози
         int diagnosisClassFrom = from.getDiagnosisClass();
@@ -184,7 +187,32 @@ public class AnalysisService {
         if (analysis.getDoctor() != null) {
             dto.setDoctorId(analysis.getDoctor().getUserId());
         }
+        if (analysis.getHospital() != null) {
+            dto.setHospitalId(analysis.getHospital().getHospitalId());
+        }
+        if (analysis.getTreatment() != null) {
+            dto.setTreatmentId(analysis.getTreatment().getTreatmentId());
+        }
+        if (analysis.getAnalysisJob() != null) {
+            dto.setAnalysisJobId(analysis.getAnalysisJob().getAnalysisJobId());
+        }
+        if (analysis.getModelVersion() != null) {
+            dto.setModelVersionId(analysis.getModelVersion().getModelVersionId());
+            dto.setModelVersion(analysis.getModelVersion().getVersion());
+        }
 
         return dto;
+    }
+
+    private void validateComparableAnalyses(ImageAnalysis from, ImageAnalysis to) {
+        if (from.getHospital() != null && to.getHospital() != null
+                && !Objects.equals(from.getHospital().getHospitalId(), to.getHospital().getHospitalId())) {
+            throw new ApiException("Аналізи належать різним лікарням", HttpStatus.BAD_REQUEST);
+        }
+
+        if (from.getTreatment() != null && to.getTreatment() != null
+                && !Objects.equals(from.getTreatment().getTreatmentId(), to.getTreatment().getTreatmentId())) {
+            throw new ApiException("Аналізи належать різним лікуванням", HttpStatus.BAD_REQUEST);
+        }
     }
 }

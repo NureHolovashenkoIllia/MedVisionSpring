@@ -1,8 +1,8 @@
 package ua.nure.holovashenko.medvisionspring.security;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import ua.nure.holovashenko.medvisionspring.entity.User;
@@ -20,10 +20,7 @@ public class JwtService {
 
     private Key signingKey;
 
-    public JwtService() {
-
-        String secret = "mySuperSecretKeyThatIsAtLeast32CharactersLong!";//dotenv.get("JWT_SECRET");
-
+    public JwtService(@Value("${jwt.secret}") String secret) {
         if (secret == null || secret.length() < 32) {
             throw new IllegalStateException("JWT_SECRET is missing or too short");
         }

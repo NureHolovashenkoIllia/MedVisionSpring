@@ -7,6 +7,7 @@ import ua.nure.holovashenko.medvisionspring.enums.UserRole;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -25,4 +26,5 @@ public class PatientProfileResponse implements UserProfileResponse {
 
     private String address;
     private LocalDate lastExamDate;
+    private List<MyHospitalResponse> hospitals;
 }

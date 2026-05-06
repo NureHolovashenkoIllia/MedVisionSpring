@@ -1,9 +1,9 @@
 package ua.nure.holovashenko.medvisionspring.svm;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.opencv.opencv_core.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
@@ -26,6 +26,9 @@ public class SvmService {
     private final MetricsCalculator metricsCalculator;
     private final HeatmapGenerator heatmapGenerator;
     private final ImageUtils imageUtils;
+
+    @Value("${medvision.svm.preload-enabled:true}")
+    private boolean preloadEnabled;
 
     public static final Map<Integer, DiagnosisInfo> CLASS_LABELS = Map.of(
             0, new DiagnosisInfo(
@@ -59,6 +62,10 @@ public class SvmService {
     @Async
     @EventListener(ApplicationReadyEvent.class)
     public void preloadModelsInBackground() {
+        if (!preloadEnabled) {
+            log.info("SVM model preload is disabled by configuration.");
+            return;
+        }
         log.info("Starting async preload of SVM models...");
         modelManager.loadModels();
         log.info("SVM models preloaded successfully.");

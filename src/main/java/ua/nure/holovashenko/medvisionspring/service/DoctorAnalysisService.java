@@ -1,9 +1,9 @@
 package ua.nure.holovashenko.medvisionspring.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ua.nure.holovashenko.medvisionspring.dto.AddNoteRequest;
@@ -12,11 +12,11 @@ import ua.nure.holovashenko.medvisionspring.enums.AnalysisStatus;
 import ua.nure.holovashenko.medvisionspring.exception.ApiException;
 import ua.nure.holovashenko.medvisionspring.repository.*;
 import ua.nure.holovashenko.medvisionspring.storage.BlobStorageService;
-import ua.nure.holovashenko.medvisionspring.storage.ResilientBlobStorageService;
-import ua.nure.holovashenko.medvisionspring.svm.DiagnosisInfo;
+import ua.nure.holovashenko.medvisionspring.svm.ImageUtils;
 import ua.nure.holovashenko.medvisionspring.svm.MetricsCalculator;
-import ua.nure.holovashenko.medvisionspring.svm.ModelMetrics;
-import ua.nure.holovashenko.medvisionspring.svm.SvmService;
+import ua.nure.holovashenko.medvisionspring.svm.SvmClassificationRequest;
+import ua.nure.holovashenko.medvisionspring.svm.SvmClassificationResult;
+import ua.nure.holovashenko.medvisionspring.svm.SvmClient;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,13 +25,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static ua.nure.holovashenko.medvisionspring.svm.SvmService.CLASS_LABELS;
-
 @Service
 @RequiredArgsConstructor
 public class DoctorAnalysisService {
 
-    private final SvmService svmService;
+    private final SvmClient svmClient;
+    private final ImageUtils imageUtils;
     private final BlobStorageService blobStorageService;
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
@@ -40,92 +39,139 @@ public class DoctorAnalysisService {
     private final DiagnosisHistoryRepository diagnosisHistoryRepository;
     private final ImageFileRepository imageFileRepository;
     private final AnalysisNoteRepository analysisNoteRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final LegacyTreatmentResolver legacyTreatmentResolver;
+    private final TreatmentService treatmentService;
+    private final AnalysisJobService analysisJobService;
+    private final SvmModelRegistryService svmModelRegistryService;
 
     @Transactional
     public ImageAnalysis analyzeAndSave(MultipartFile file, Long patientId, Long doctorId) throws IOException {
-        File tempFile = File.createTempFile("upload-", ".png");
-        file.transferTo(tempFile);
-
         User patientUser = userRepository.findById(patientId)
                 .orElseThrow(() -> new ApiException("Пацієнт не знайдений", HttpStatus.NOT_FOUND));
         User doctorUser = userRepository.findById(doctorId)
                 .orElseThrow(() -> new ApiException("Лікар не знайдений", HttpStatus.NOT_FOUND));
 
+        Treatment treatment = legacyTreatmentResolver.resolve(patientUser, doctorUser);
+        return analyzeAndSave(file, treatment, doctorUser);
+    }
 
-        int prediction = svmService.classify(tempFile, false);
+    @Transactional
+    public ImageAnalysis analyzeAndSave(MultipartFile file, Long hospitalId, Long treatmentId, UserDetails userDetails) throws IOException {
+        User doctorUser = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new ApiException("Лікар не знайдений", HttpStatus.NOT_FOUND));
+        Treatment treatment = treatmentService.getTreatmentForAnalysis(hospitalId, treatmentId, userDetails);
+        return analyzeAndSave(file, treatment, doctorUser);
+    }
 
-        String imageObjectName = "images/upload-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
-        String imageUrl = blobStorageService.uploadFile(tempFile, imageObjectName, file.getContentType());
+    private ImageAnalysis analyzeAndSave(MultipartFile file, Treatment treatment, User doctorUser) throws IOException {
+        AnalysisJob job = analysisJobService.createProcessingJob(
+                treatment.getHospital(),
+                treatment,
+                doctorUser,
+                "fileName=" + file.getOriginalFilename() + ";contentType=" + file.getContentType()
+        );
+        File tempFile = File.createTempFile("upload-", ".png");
+        try {
+            file.transferTo(tempFile);
 
-        ImageFile imageFile = ImageFile.builder()
-                .imageFileName(imageObjectName)
-                .imageFileType(file.getContentType())
-                .uploadedAt(LocalDateTime.now())
-                .imageFileUrl(imageUrl)
-                .uploadedBy(doctorUser)
-                .build();
-        imageFileRepository.save(imageFile);
+            User patientUser = treatment.getPatient();
+            SvmClassificationResult classification = svmClient.classify(new SvmClassificationRequest(tempFile, true));
+            SvmModelVersion modelVersion = svmModelRegistryService.getActiveFullImageModel();
 
-        var heatmapMat = svmService.generateHeatmap(tempFile, true);
-        File heatmapFile = File.createTempFile("heatmap-", ".png");
-        svmService.saveMatToFile(heatmapMat, heatmapFile);
+            String imageObjectName = "images/upload-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
+            String imageUrl = blobStorageService.uploadFile(tempFile, imageObjectName, file.getContentType());
 
-        String heatmapObjectName = "heatmaps/heatmap-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
-        String heatmapUrl = blobStorageService.uploadFile(heatmapFile, heatmapObjectName, file.getContentType());
+            ImageFile imageFile = ImageFile.builder()
+                    .imageFileName(imageObjectName)
+                    .imageFileType(file.getContentType())
+                    .uploadedAt(LocalDateTime.now())
+                    .imageFileUrl(imageUrl)
+                    .uploadedBy(doctorUser)
+                    .hospital(treatment.getHospital())
+                    .treatment(treatment)
+                    .build();
+            imageFileRepository.save(imageFile);
 
-        ImageFile heatmapImage = ImageFile.builder()
-                .imageFileName(heatmapObjectName)
-                .imageFileType(file.getContentType())
-                .uploadedAt(LocalDateTime.now())
-                .imageFileUrl(heatmapUrl)
-                .uploadedBy(doctorUser)
-                .build();
-        imageFileRepository.save(heatmapImage);
+            File heatmapFile = File.createTempFile("heatmap-", ".png");
+            imageUtils.saveMatToFile(classification.heatmap(), heatmapFile);
 
-        ModelMetrics metrics = svmService.loadMetrics("svm-models/full_metrics.json");
-        MetricsCalculator.ClassMetrics classMetrics = metrics.perClassMetrics().get(prediction);
-        float precision = classMetrics != null ? (float) classMetrics.precision() : 0f;
-        float recall = classMetrics != null ? (float) classMetrics.recall() : 0f;
+            String heatmapObjectName = "heatmaps/heatmap-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
+            String heatmapUrl = blobStorageService.uploadFile(heatmapFile, heatmapObjectName, file.getContentType());
 
-        DiagnosisInfo diagnosisText = CLASS_LABELS.getOrDefault(prediction, new DiagnosisInfo());
+            ImageFile heatmapImage = ImageFile.builder()
+                    .imageFileName(heatmapObjectName)
+                    .imageFileType(file.getContentType())
+                    .uploadedAt(LocalDateTime.now())
+                    .imageFileUrl(heatmapUrl)
+                    .uploadedBy(doctorUser)
+                    .hospital(treatment.getHospital())
+                    .treatment(treatment)
+                    .build();
+            imageFileRepository.save(heatmapImage);
 
-        ImageAnalysis analysis = ImageAnalysis.builder()
-                .imageFile(imageFile)
-                .heatmapFile(heatmapImage)
-                .analysisDetails(diagnosisText.getAnalysisDetails())
-                .analysisDiagnosis(diagnosisText.getAnalysisDiagnosis())
-                .treatmentRecommendations(diagnosisText.getTreatmentRecommendations())
-                .analysisAccuracy((float) metrics.accuracy())
-                .analysisPrecision(precision)
-                .analysisRecall(recall)
-                .creationDatetime(LocalDateTime.now())
-                .analysisStatus(AnalysisStatus.REQUIRES_REVISION)
-                .diagnosisClass(prediction)
-                .patient(patientUser)
-                .doctor(doctorUser)
-                .build();
+            MetricsCalculator.ClassMetrics classMetrics = classification.classMetrics();
+            float precision = classMetrics != null ? (float) classMetrics.precision() : 0f;
+            float recall = classMetrics != null ? (float) classMetrics.recall() : 0f;
 
-        ImageAnalysis savedAnalysis = imageAnalysisRepository.save(analysis);
+            ImageAnalysis analysis = ImageAnalysis.builder()
+                    .imageFile(imageFile)
+                    .heatmapFile(heatmapImage)
+                    .analysisDetails(classification.diagnosisInfo().getAnalysisDetails())
+                    .analysisDiagnosis(classification.diagnosisInfo().getAnalysisDiagnosis())
+                    .treatmentRecommendations(classification.diagnosisInfo().getTreatmentRecommendations())
+                    .analysisAccuracy((float) classification.metrics().accuracy())
+                    .analysisPrecision(precision)
+                    .analysisRecall(recall)
+                    .creationDatetime(LocalDateTime.now())
+                    .analysisStatus(AnalysisStatus.REQUIRES_REVISION)
+                    .diagnosisClass(classification.diagnosisClass())
+                    .patient(patientUser)
+                    .doctor(doctorUser)
+                    .hospital(treatment.getHospital())
+                    .treatment(treatment)
+                    .analysisJob(job)
+                    .modelVersion(modelVersion)
+                    .build();
 
-        Doctor doctor = doctorRepository.findById(doctorUser.getUserId()).orElse(null);
+            ImageAnalysis savedAnalysis = imageAnalysisRepository.save(analysis);
 
-        DiagnosisHistory diagnosis = DiagnosisHistory.builder()
-                .imageAnalysis(savedAnalysis)
-                .diagnosisText(savedAnalysis.getAnalysisDiagnosis())
-                .changedByDoctor(doctor)
-                .changeReason("Діагноз SVM")
-                .build();
+            Doctor doctor = doctorRepository.findById(doctorUser.getUserId()).orElse(null);
 
-        diagnosisHistoryRepository.save(diagnosis);
+            DiagnosisHistory diagnosis = DiagnosisHistory.builder()
+                    .imageAnalysis(savedAnalysis)
+                    .diagnosisText(savedAnalysis.getAnalysisDiagnosis())
+                    .changedByDoctor(doctor)
+                    .changeReason("Діагноз SVM")
+                    .build();
 
-        Patient patient = patientRepository.findById(patientUser.getUserId())
-                .orElseThrow(() -> new ApiException("Пацієнт не знайдений", HttpStatus.NOT_FOUND));
+            diagnosisHistoryRepository.save(diagnosis);
 
-        patient.setLastExamDate(LocalDate.now());
-        patientRepository.save(patient);
+            Patient patient = patientRepository.findById(patientUser.getUserId())
+                    .orElseThrow(() -> new ApiException("Пацієнт не знайдений", HttpStatus.NOT_FOUND));
 
-        return savedAnalysis;
+            patient.setLastExamDate(LocalDate.now());
+            patientRepository.save(patient);
+
+            analysisJobService.completeJob(
+                    job,
+                    savedAnalysis,
+                    "diagnosisClass=" + savedAnalysis.getDiagnosisClass()
+                            + ";analysisId=" + savedAnalysis.getImageAnalysisId()
+            );
+
+            return savedAnalysis;
+        } catch (Exception e) {
+            analysisJobService.failJob(job, e.getMessage());
+            if (e instanceof IOException ioException) {
+                throw ioException;
+            }
+            if (e instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new RuntimeException(e);
+        } finally {
+            tempFile.delete();
+        }
     }
 
     public Optional<ImageAnalysis> getAnalysis(Long id) {

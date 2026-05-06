@@ -68,4 +68,20 @@ public class ImageAnalysis {
     @ManyToOne
     @JoinColumn(name = "doctor_id")
     private User doctor;
+
+    @ManyToOne
+    @JoinColumn(name = "hospital_id")
+    private Hospital hospital;
+
+    @ManyToOne
+    @JoinColumn(name = "treatment_id")
+    private Treatment treatment;
+
+    @ManyToOne
+    @JoinColumn(name = "analysis_job_id")
+    private AnalysisJob analysisJob;
+
+    @ManyToOne
+    @JoinColumn(name = "model_version_id")
+    private SvmModelVersion modelVersion;
 }
