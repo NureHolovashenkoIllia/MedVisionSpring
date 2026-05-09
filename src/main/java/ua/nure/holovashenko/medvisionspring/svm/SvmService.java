@@ -30,6 +30,8 @@ public class SvmService {
     @Value("${medvision.svm.preload-enabled:true}")
     private boolean preloadEnabled;
 
+    private final Object modelLoadLock = new Object();
+
     public static final Map<Integer, DiagnosisInfo> CLASS_LABELS = Map.of(
             0, new DiagnosisInfo(
                     "Структура легень у межах норми, відхилень не виявлено.",
@@ -120,7 +122,16 @@ public class SvmService {
 
     private void ensureModelsReady() {
         if (!modelManager.areModelsReady()) {
-            throw new ApiException("SVM models are still loading. Please try again later.", HttpStatus.SERVICE_UNAVAILABLE);
+            synchronized (modelLoadLock) {
+                if (!modelManager.areModelsReady()) {
+                    log.info("SVM models are not ready. Loading models synchronously before request processing...");
+                    modelManager.loadModels();
+                }
+            }
+        }
+
+        if (!modelManager.areModelsReady()) {
+            throw new ApiException("SVM models are unavailable. Please check model files and server logs.", HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 }

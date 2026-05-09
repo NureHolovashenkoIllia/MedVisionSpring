@@ -32,7 +32,11 @@ public class SvmModelManager {
         return modelsReady;
     }
 
-    public void loadModels() {
+    public synchronized void loadModels() {
+        if (modelsReady) {
+            return;
+        }
+
         try {
             patchModel = SVM.load("svm-models/svm_patch_model.xml");
             log.info("Patch-based SVM model successfully loaded");
