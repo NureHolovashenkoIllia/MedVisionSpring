@@ -20,8 +20,8 @@ public class ImageFile {
     @Column(name = "image_file_id", nullable = false)
     private Long imageFileId;
 
-    @Size(max = 255)
-    @Column(name = "image_file_url", length = 255, nullable = false)
+    @Size(max = 1000)
+    @Column(name = "image_file_url", length = 1000, nullable = false)
     private String imageFileUrl;
 
     @Size(max = 255)

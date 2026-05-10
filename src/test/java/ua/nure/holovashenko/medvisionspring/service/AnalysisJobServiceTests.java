@@ -12,6 +12,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+
 class AnalysisJobServiceTests {
 
     private final AnalysisJobRepository analysisJobRepository = mock(AnalysisJobRepository.class);
@@ -34,6 +36,7 @@ class AnalysisJobServiceTests {
                 .build();
 
         when(analysisJobRepository.save(any(AnalysisJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(analysisJobRepository.findById(1L)).thenReturn(Optional.of(job));
 
         AnalysisJob failed = analysisJobService.failJob(job, "SVM unavailable");
 

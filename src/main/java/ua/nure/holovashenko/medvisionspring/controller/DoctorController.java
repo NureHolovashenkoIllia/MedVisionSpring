@@ -6,8 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ua.nure.holovashenko.medvisionspring.dto.AddNoteRequest;
+import ua.nure.holovashenko.medvisionspring.dto.ImageAnalysisResponse;
+import ua.nure.holovashenko.medvisionspring.dto.PatientProfileResponse;
 import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
-import ua.nure.holovashenko.medvisionspring.entity.Patient;
 import ua.nure.holovashenko.medvisionspring.service.DoctorAnalysisService;
 
 import java.io.IOException;
@@ -31,8 +32,8 @@ public class DoctorController {
     }
 
     @GetMapping("/analysis/{id}")
-    public ResponseEntity<ImageAnalysis> getAnalysis(@PathVariable Long id) {
-        return doctorAnalysisService.getAnalysis(id)
+    public ResponseEntity<ImageAnalysisResponse> getAnalysis(@PathVariable Long id) {
+        return doctorAnalysisService.getAnalysisResponse(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -51,13 +52,13 @@ public class DoctorController {
     }
 
     @GetMapping("/patients")
-    public ResponseEntity<List<Patient>> getAllPatients() {
-        return ResponseEntity.ok(doctorAnalysisService.getAllPatients());
+    public ResponseEntity<List<PatientProfileResponse>> getAllPatients() {
+        return ResponseEntity.ok(doctorAnalysisService.getAllPatientProfiles());
     }
 
     @GetMapping("/patients/{id}")
-    public ResponseEntity<Patient> getPatientById(@PathVariable Long id) {
-        return ResponseEntity.ok(doctorAnalysisService.getPatientById(id));
+    public ResponseEntity<PatientProfileResponse> getPatientById(@PathVariable Long id) {
+        return ResponseEntity.ok(doctorAnalysisService.getPatientProfileById(id));
     }
 
     @PostMapping("/analyses/{analysesId}/notes")

@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import ua.nure.holovashenko.medvisionspring.entity.Doctor;
 import ua.nure.holovashenko.medvisionspring.entity.Hospital;
@@ -102,16 +103,22 @@ class ClinicalWorkflowIntegrationTests {
     @MockBean
     private ImageUtils imageUtils;
 
+    private boolean svmClassifyObservedTransaction;
+
     @BeforeEach
     void setUp() throws Exception {
+        svmClassifyObservedTransaction = false;
         MetricsCalculator.ClassMetrics classMetrics = new MetricsCalculator.ClassMetrics(0.91, 0.89, 0.90);
-        when(svmClient.classify(any())).thenReturn(new SvmClassificationResult(
-                2,
-                new DiagnosisInfo("SVM analysis details", "Pneumonia pattern", "Review with radiologist"),
-                new ModelMetrics(0.96, new int[][]{{1, 0}, {0, 1}}, Map.of(2, classMetrics)),
-                classMetrics,
-                new Mat()
-        ));
+        when(svmClient.classify(any())).thenAnswer(invocation -> {
+            svmClassifyObservedTransaction = TransactionSynchronizationManager.isActualTransactionActive();
+            return new SvmClassificationResult(
+                    2,
+                    new DiagnosisInfo("SVM analysis details", "Pneumonia pattern", "Review with radiologist"),
+                    new ModelMetrics(0.96, new int[][]{{1, 0}, {0, 1}}, Map.of(2, classMetrics)),
+                    classMetrics,
+                    new Mat()
+            );
+        });
         doNothing().when(imageUtils).saveMatToFile(nullable(Mat.class), any(File.class));
     }
 
@@ -228,6 +235,8 @@ class ClinicalWorkflowIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").value(org.hamcrest.Matchers.startsWith("Analysis saved. ID:")));
 
+        assertThat(svmClassifyObservedTransaction).isFalse();
+
         Hospital legacyHospital = hospitalRepository.findByCode("LEGACY").orElseThrow();
         Treatment legacyTreatment = treatmentRepository.findByHospitalAndPatientAndPrimaryDoctorAndStatus(
                 legacyHospital,
@@ -248,6 +257,31 @@ class ClinicalWorkflowIntegrationTests {
         assertThat(analysis.getAnalysisJob().getStatus()).isEqualTo(AnalysisJobStatus.COMPLETED);
         assertThat(analysis.getModelVersion()).isNotNull();
         assertThat(analysis.getModelVersion().getVersion()).isEqualTo("full-linear-legacy");
+
+        mockMvc.perform(get("/api/doctor/analysis/{id}", analysis.getImageAnalysisId())
+                        .with(user(doctor.getEmail()).roles("DOCTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.imageAnalysisId").value(analysis.getImageAnalysisId()))
+                .andExpect(jsonPath("$.patientId").value(patient.getUserId()))
+                .andExpect(jsonPath("$.doctorId").value(doctor.getUserId()))
+                .andExpect(jsonPath("$.analysisJobId").value(analysis.getAnalysisJob().getAnalysisJobId()))
+                .andExpect(jsonPath("$.imageFile").doesNotExist())
+                .andExpect(jsonPath("$.patient").doesNotExist())
+                .andExpect(jsonPath("$.doctor").doesNotExist());
+
+        mockMvc.perform(get("/api/patient/analyses")
+                        .with(user(patient.getEmail()).roles("PATIENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].imageAnalysisId").value(analysis.getImageAnalysisId()))
+                .andExpect(jsonPath("$[0].imageFile").doesNotExist())
+                .andExpect(jsonPath("$[0].patient").doesNotExist());
+
+        mockMvc.perform(get("/api/patient/analyses/{id}", analysis.getImageAnalysisId())
+                        .with(user(patient.getEmail()).roles("PATIENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.imageAnalysisId").value(analysis.getImageAnalysisId()))
+                .andExpect(jsonPath("$.imageFile").doesNotExist())
+                .andExpect(jsonPath("$.patient").doesNotExist());
     }
 
     @Test

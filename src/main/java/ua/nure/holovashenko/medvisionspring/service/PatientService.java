@@ -3,6 +3,7 @@ package ua.nure.holovashenko.medvisionspring.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.UserDetails;
+import ua.nure.holovashenko.medvisionspring.dto.ImageAnalysisResponse;
 import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
 import ua.nure.holovashenko.medvisionspring.entity.User;
 import ua.nure.holovashenko.medvisionspring.repository.ImageAnalysisRepository;
@@ -21,6 +22,7 @@ public class PatientService {
     private final ImageAnalysisRepository imageAnalysisRepository;
     private final UserRepository userRepository;
     private final ResilientBlobStorageService blobStorageService;
+    private final AnalysisService analysisService;
 
     public List<ImageAnalysis> getAnalyses(UserDetails userDetails) {
         User patient = userRepository.findByEmail(userDetails.getUsername())
@@ -28,10 +30,22 @@ public class PatientService {
         return imageAnalysisRepository.findAllByPatient(patient);
     }
 
+    public List<ImageAnalysisResponse> getAnalysisResponses(UserDetails userDetails) {
+        return getAnalyses(userDetails).stream()
+                .map(analysisService::mapToDto)
+                .toList();
+    }
+
     public List<ImageAnalysis> getUnviewedAnalyses(UserDetails userDetails) {
         User patient = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("Пацієнта не знайдено"));
         return imageAnalysisRepository.findAllByPatientAndViewedFalse(patient);
+    }
+
+    public List<ImageAnalysisResponse> getUnviewedAnalysisResponses(UserDetails userDetails) {
+        return getUnviewedAnalyses(userDetails).stream()
+                .map(analysisService::mapToDto)
+                .toList();
     }
 
 
@@ -47,6 +61,10 @@ public class PatientService {
         });
 
         return analysisOpt;
+    }
+
+    public Optional<ImageAnalysisResponse> getAnalysisResponseById(Long id, UserDetails userDetails) {
+        return getAnalysisById(id, userDetails).map(analysisService::mapToDto);
     }
 
     public void markAnalysisAsViewed(Long id, UserDetails userDetails) {

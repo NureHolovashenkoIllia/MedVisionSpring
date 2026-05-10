@@ -40,19 +40,22 @@ public class AnalysisJobService {
 
     @Transactional
     public AnalysisJob completeJob(AnalysisJob job, ImageAnalysis analysis, String responsePayload) {
-        job.setImageAnalysis(analysis);
-        job.setStatus(AnalysisJobStatus.COMPLETED);
-        job.setResponsePayload(responsePayload);
-        job.setFinishedAt(LocalDateTime.now());
-        return analysisJobRepository.save(job);
+        AnalysisJob managedJob = getJobEntity(job);
+        managedJob.setImageAnalysis(analysis);
+        managedJob.setStatus(AnalysisJobStatus.COMPLETED);
+        managedJob.setResponsePayload(responsePayload);
+        managedJob.setFinishedAt(LocalDateTime.now());
+        return analysisJobRepository.save(managedJob);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AnalysisJob failJob(AnalysisJob job, String errorMessage) {
-        job.setStatus(AnalysisJobStatus.FAILED);
-        job.setErrorMessage(errorMessage);
-        job.setFinishedAt(LocalDateTime.now());
-        return analysisJobRepository.save(job);
+        AnalysisJob managedJob = getJobEntity(job);
+        managedJob.setImageAnalysis(null);
+        managedJob.setStatus(AnalysisJobStatus.FAILED);
+        managedJob.setErrorMessage(errorMessage);
+        managedJob.setFinishedAt(LocalDateTime.now());
+        return analysisJobRepository.save(managedJob);
     }
 
     public AnalysisJobResponse getJob(Long hospitalId, Long jobId, UserDetails userDetails) {
@@ -80,5 +83,13 @@ public class AnalysisJobService {
                 .finishedAt(job.getFinishedAt())
                 .createdAt(job.getCreatedAt())
                 .build();
+    }
+
+    private AnalysisJob getJobEntity(AnalysisJob job) {
+        if (job == null || job.getAnalysisJobId() == null) {
+            throw new ApiException("Job аналізу не знайдено", HttpStatus.NOT_FOUND);
+        }
+        return analysisJobRepository.findById(job.getAnalysisJobId())
+                .orElseThrow(() -> new ApiException("Job аналізу не знайдено", HttpStatus.NOT_FOUND));
     }
 }

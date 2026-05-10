@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import ua.nure.holovashenko.medvisionspring.entity.ImageAnalysis;
+import ua.nure.holovashenko.medvisionspring.dto.ImageAnalysisResponse;
 import ua.nure.holovashenko.medvisionspring.service.PatientService;
 
 import java.io.IOException;
@@ -21,20 +21,20 @@ public class PatientController {
     private final PatientService patientService;
 
     @GetMapping("/analyses")
-    public ResponseEntity<List<ImageAnalysis>> getMyAnalyses(@AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(patientService.getAnalyses(userDetails));
+    public ResponseEntity<List<ImageAnalysisResponse>> getMyAnalyses(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(patientService.getAnalysisResponses(userDetails));
     }
 
     @GetMapping("/analyses/{id}")
-    public ResponseEntity<ImageAnalysis> getAnalysis(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
-        return patientService.getAnalysisById(id, userDetails)
+    public ResponseEntity<ImageAnalysisResponse> getAnalysis(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        return patientService.getAnalysisResponseById(id, userDetails)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/analyses/unviewed")
-    public ResponseEntity<List<ImageAnalysis>> getUnviewedAnalyses(@AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(patientService.getUnviewedAnalyses(userDetails));
+    public ResponseEntity<List<ImageAnalysisResponse>> getUnviewedAnalyses(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(patientService.getUnviewedAnalysisResponses(userDetails));
     }
 
     @PostMapping("/analyses/{id}/mark-viewed")

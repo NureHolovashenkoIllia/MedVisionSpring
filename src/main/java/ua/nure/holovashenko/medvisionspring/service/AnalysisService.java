@@ -162,7 +162,7 @@ public class AnalysisService {
         return true;
     }
 
-    private ImageAnalysisResponse mapToDto(ImageAnalysis analysis) {
+    public ImageAnalysisResponse mapToDto(ImageAnalysis analysis) {
         ImageAnalysisResponse dto = new ImageAnalysisResponse();
         dto.setImageAnalysisId(analysis.getImageAnalysisId());
         dto.setAnalysisAccuracy(analysis.getAnalysisAccuracy());

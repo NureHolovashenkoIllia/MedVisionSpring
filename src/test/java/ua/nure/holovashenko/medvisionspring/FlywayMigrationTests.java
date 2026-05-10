@@ -18,6 +18,6 @@ class FlywayMigrationTests {
     @Test
     void appliesBaselineMigration() {
         assertThat(flyway.info().applied()).isNotEmpty();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("6");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("7");
     }
 }
